@@ -8,10 +8,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import com.loohp.blockmodelrenderer.threading.Service;
 
 public class Model implements ITransformable {
 	
@@ -66,28 +71,45 @@ public class Model implements ITransformable {
 	
 	public void render(int w, int h, Graphics2D g, BufferedImage image) {
 		AffineTransform transform = g.getTransform();
-		Map<BufferedImage, ZBuffer> data = new HashMap<>();
+		Map<BufferedImage, ZBuffer> data = new LinkedHashMap<>();
+		List<Future<?>> tasks = new ArrayList<>();
 		for (Face face : faces) {
-			BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-			Graphics2D g2 = img.createGraphics();
-			g2.setTransform(transform);
-			ZBuffer z = new ZBuffer(w, h, (int) g.getTransform().getTranslateX(), (int) g.getTransform().getTranslateY());
-			face.render(g2, z);
-			g2.dispose();
-			z.setCenter(0, 0);
-			data.put(img, z);
+			tasks.add(Service.execute(() -> {
+				BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+				Graphics2D g2 = img.createGraphics();
+				g2.setTransform(transform);
+				ZBuffer z = new ZBuffer(w, h, (int) g.getTransform().getTranslateX(), (int) g.getTransform().getTranslateY());
+				face.render(g2, z);
+				g2.dispose();
+				z.setCenter(0, 0);
+				data.put(img, z);
+			}));
 		}
+		tasks.forEach(each -> {
+			try {each.get();} catch (InterruptedException | ExecutionException e) {}
+		});
 		Graphics2D g2 = image.createGraphics();
-		for (Entry<BufferedImage, ZBuffer> entry : data.entrySet()) {
+		Iterator<Entry<BufferedImage, ZBuffer>> itr = data.entrySet().iterator();
+		while (itr.hasNext()) {
+			Entry<BufferedImage, ZBuffer> entry = itr.next();
 			g2.drawImage(entry.getKey(), 0, 0, null);
+			if (entry.getValue().ignoreBuffer()) {
+				itr.remove();
+			}
 		}
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
 				int finalX = x;
 				int finalY = y;
-				data.entrySet().stream().filter(each -> !each.getValue().ignoreBuffer()).sorted(Comparator.comparing(entry -> entry.getValue().get(finalX, finalY))).forEachOrdered(entry -> {
-					g2.setColor(new Color(entry.getKey().getRGB(finalX, finalY), true));
-					g2.drawLine(finalX, finalY, finalX, finalY);
+				data.entrySet().stream().sorted(Comparator.comparing(entry -> entry.getValue().get(finalX, finalY))).forEachOrdered(entry -> {
+					int color = entry.getKey().getRGB(finalX, finalY);
+					int alpha = (color >> 24) & 0xff;
+					if (alpha == 255) {
+						image.setRGB(finalX, finalY, color);
+					} else if (alpha != 0) {
+						g2.setColor(new Color(color, true));
+						g2.drawPolygon(new int[] {finalX}, new int[] {finalY}, 1);
+					}
 				});
 			}
 		}
