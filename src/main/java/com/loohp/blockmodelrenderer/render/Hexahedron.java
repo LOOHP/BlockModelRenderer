@@ -207,7 +207,7 @@ public class Hexahedron implements ITransformable {
 	}
 	
 	public void sortFaces() {
-		Collections.sort(ordered, Face.DEPTH_COMPARATOR);
+		Collections.sort(ordered, Face.AVERAGE_DEPTH_COMPARATOR);
 	}
 
 }

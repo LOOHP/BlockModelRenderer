@@ -13,7 +13,7 @@ import com.loohp.blockmodelrenderer.utls.PointConversionUtils;
 
 public class Face implements ITransformable {
 	
-	public static final Comparator<Face> DEPTH_COMPARATOR = Comparator.comparing(face -> face.getAverageDepth());
+	public static final Comparator<Face> AVERAGE_DEPTH_COMPARATOR = Comparator.comparing(face -> face.getAverageZ());
 	
 	public BufferedImage image;
 	protected Face oppositeFace;
@@ -111,14 +111,22 @@ public class Face implements ITransformable {
 	}
 	
 	private Vector intersectPoint(Vector rayVector, Vector rayPoint, Vector planeNormal, Vector planePoint) {
-		Vector diff = rayPoint.clone().minus(planePoint);
+		Vector diff = rayPoint.clone().subtract(planePoint);
         double prod1 = diff.dot(planeNormal);
         double prod2 = rayVector.dot(planeNormal);
         double prod3 = prod1 / prod2;
-        return rayPoint.clone().minus(rayVector.clone().times(prod3));
+        return rayPoint.clone().subtract(rayVector.clone().multiply(prod3));
     }
 	
-	public double getAverageDepth() {
+	public double getAverageX() {
+		return Stream.of(points).mapToDouble(point -> point.x).average().getAsDouble();
+	}
+	
+	public double getAverageY() {
+		return Stream.of(points).mapToDouble(point -> point.y).average().getAsDouble();
+	}
+	
+	public double getAverageZ() {
 		return Stream.of(points).mapToDouble(point -> point.z).average().getAsDouble();
 	}
 	
@@ -148,8 +156,8 @@ public class Face implements ITransformable {
 				zBuffer.setIgnoreBuffer(true);
 			}
 		} else {
-			if (oppositeFace != null && DEPTH_COMPARATOR.compare(this, oppositeFace) <= 0) {
-				if (oppositeFace.priority > this.priority || oppositeFace.getAverageDepth() - this.getAverageDepth() > 0.1) {
+			if (oppositeFace != null && AVERAGE_DEPTH_COMPARATOR.compare(this, oppositeFace) <= 0) {
+				if (oppositeFace.priority > this.priority || oppositeFace.getAverageZ() - this.getAverageZ() > 0.1) {
 					return;
 				}
 			}

@@ -64,21 +64,21 @@ public class Vector {
 		return this;
 	}
 	
-	 public Vector plus(Vector v) {
+	 public Vector add(Vector v) {
          this.x = x + v.x;
          this.y = y + v.y;
          this.z = z + v.z;
          return this;
      }
 
-	 public Vector minus(Vector v) {
+	 public Vector subtract(Vector v) {
          this.x = x - v.x;
          this.y = y - v.y;
          this.z = z - v.z;
          return this;
      }
 
-	 public Vector times(double s) {
+	 public Vector multiply(double s) {
          this.x = x * s;
          this.y = y * s;
          this.z = z * s;

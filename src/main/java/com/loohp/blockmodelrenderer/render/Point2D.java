@@ -19,4 +19,16 @@ public class Point2D {
 		return Math.sqrt((this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y));
 	}
 	
+	public Point2D multiply(double m) {
+		this.x *= m;
+		this.y *= m;
+		return this;
+	}
+	
+	public Point2D multiply(double originX, double originY, double m) {
+		this.x = (this.x - originX) * m + originX;
+		this.x = (this.y - originY) * m + originY;
+		return this;
+	}
+	
 }

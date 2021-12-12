@@ -66,7 +66,7 @@ public class Model implements ITransformable {
 	}
 	
 	public void sortFaces() {
-		Collections.sort(faces, Face.DEPTH_COMPARATOR);
+		Collections.sort(faces, Face.AVERAGE_DEPTH_COMPARATOR);
 	}
 	
 	public void render(int w, int h, Graphics2D g, BufferedImage image) {
@@ -92,8 +92,8 @@ public class Model implements ITransformable {
 		Iterator<Entry<BufferedImage, ZBuffer>> itr = data.entrySet().iterator();
 		while (itr.hasNext()) {
 			Entry<BufferedImage, ZBuffer> entry = itr.next();
-			g2.drawImage(entry.getKey(), 0, 0, null);
 			if (entry.getValue().ignoreBuffer()) {
+				g2.drawImage(entry.getKey(), 0, 0, null);
 				itr.remove();
 			}
 		}
