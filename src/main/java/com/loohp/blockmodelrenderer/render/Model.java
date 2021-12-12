@@ -16,7 +16,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import com.loohp.blockmodelrenderer.threading.Service;
+import com.loohp.blockmodelrenderer.threading.GraphicsService;
 
 public class Model implements ITransformable {
 	
@@ -74,7 +74,7 @@ public class Model implements ITransformable {
 		Map<BufferedImage, ZBuffer> data = new LinkedHashMap<>();
 		List<Future<?>> tasks = new ArrayList<>();
 		for (Face face : faces) {
-			tasks.add(Service.execute(() -> {
+			tasks.add(GraphicsService.execute(() -> {
 				BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D g2 = img.createGraphics();
 				g2.setTransform(transform);
