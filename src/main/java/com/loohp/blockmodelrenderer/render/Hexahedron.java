@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class Hexahedron {
+public class Hexahedron implements ITransformable {
 	
 	private Face upFace;
 	private Face downFace;
@@ -173,7 +173,7 @@ public class Hexahedron {
 
 	public void render(Graphics2D g) {
 		for (Face face : getFaces()) {
-			face.render(g);
+			face.render(g, null);
 		}
 		sortFaces();
 	}

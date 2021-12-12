@@ -1,6 +1,5 @@
 package com.loohp.blockmodelrenderer.render;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.geom.AffineTransform;
@@ -10,12 +9,12 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import com.loohp.blockmodelrenderer.utls.ImageUtils;
+import com.loohp.blockmodelrenderer.utls.PlaneUtils;
 import com.loohp.blockmodelrenderer.utls.PointConversionUtils;
 
-public class Face {
+public class Face implements ITransformable {
 	
 	public static final Comparator<Face> DEPTH_COMPARATOR = Comparator.comparing(face -> face.getAverageDepth());
-	private static final Color EMPTY_COLOR = new Color(0, 0, 0, 0);
 	
 	public BufferedImage image;
 	protected Face oppositeFace;
@@ -94,6 +93,32 @@ public class Face {
 		return points;
 	}
 	
+	public double getDepthAt(double x, double y) {
+		Point2D[] points2d = new Point2D[points.length];
+		for (int i = 0; i < points.length; i++) {
+			points2d[i] = new Point2D(points[i].x, points[i].y);
+		}
+		
+		if (!PlaneUtils.contains(x, y, points2d)) {
+			return -Double.MAX_VALUE;
+		}
+		
+		Vector rayVector = new Vector(0, 0, 1);
+		Vector rayPoint = new Vector(x, y, 0);
+		Vector planeNormal = new Vector(this.points[3], this.points[0]).cross(new Vector(this.points[1], this.points[0])).normalize();
+		Vector planePoint = new Vector(this.points[0].x, this.points[0].y, this.points[0].z);
+		
+		return intersectPoint(rayVector, rayPoint, planeNormal, planePoint).getZ();
+	}
+	
+	private Vector intersectPoint(Vector rayVector, Vector rayPoint, Vector planeNormal, Vector planePoint) {
+		Vector diff = rayPoint.clone().minus(planePoint);
+        double prod1 = diff.dot(planeNormal);
+        double prod2 = rayVector.dot(planeNormal);
+        double prod3 = prod1 / prod2;
+        return rayPoint.clone().minus(rayVector.clone().times(prod3));
+    }
+	
 	public double getAverageDepth() {
 		return Stream.of(points).mapToDouble(point -> point.z).average().getAsDouble();
 	}
@@ -118,24 +143,26 @@ public class Face {
 		}
 	}
 
-	public void render(Graphics2D g) {
-		if (!ignoreZFight && oppositeFace != null && DEPTH_COMPARATOR.compare(this, oppositeFace) <= 0) {
-			if (oppositeFace.priority > this.priority || oppositeFace.getAverageDepth() - this.getAverageDepth() > 0.1) {
-				return;
+	public void render(Graphics2D g, ZBuffer zBuffer) {
+		if (ignoreZFight) {
+			if (zBuffer != null) {
+				zBuffer.setIgnoreBuffer(true);
+			}
+		} else {
+			if (oppositeFace != null && DEPTH_COMPARATOR.compare(this, oppositeFace) <= 0) {
+				if (oppositeFace.priority > this.priority || oppositeFace.getAverageDepth() - this.getAverageDepth() > 0.1) {
+					return;
+				}
 			}
 		}
-		Polygon polygon = new Polygon();
-		Point2D[] points2d = new Point2D[points.length];
-		for (int i = 0; i < points.length; i++) {
-			Point2D p = points2d[i] = PointConversionUtils.convert(points[i]);
-			polygon.addPoint((int) p.x, (int) p.y);
-		}
-		if (image == null) {
-			Color originalColor = g.getColor();
-			g.setColor(EMPTY_COLOR);
-			g.fillPolygon(polygon);
-			g.setColor(originalColor);
-		} else {
+		if (image != null) {
+			Polygon polygon = new Polygon();
+			Point2D[] points2d = new Point2D[points.length];
+			for (int i = 0; i < points.length; i++) {
+				Point2D p = points2d[i] = PointConversionUtils.convert(points[i]);
+				polygon.addPoint((int) p.x, (int) p.y);
+			}
+			
 			BufferedImage image = ImageUtils.multiply(ImageUtils.copyImage(this.image), lightRatio);
 			
 			double w = 0;
@@ -186,6 +213,14 @@ public class Face {
 			g.drawImage(image, 0, 0, null);
 			
 			g.setTransform(orginalTransform);
+			
+			if (zBuffer != null) {
+				for (int y = zBuffer.getMinY(); y < zBuffer.getMaxY(); y++) {
+					for (int x = zBuffer.getMinX(); x < zBuffer.getMaxX(); x++) {
+						zBuffer.set(x, y, getDepthAt(x / orginalTransform.getScaleX(), -y / orginalTransform.getScaleY()));
+					}
+				}
+			}
 		}
 	}
 
