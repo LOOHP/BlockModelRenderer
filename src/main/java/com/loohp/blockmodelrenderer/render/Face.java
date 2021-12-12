@@ -1,7 +1,6 @@
 package com.loohp.blockmodelrenderer.render;
 
 import java.awt.Graphics2D;
-import java.awt.Polygon;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
@@ -96,7 +95,7 @@ public class Face implements ITransformable {
 	public double getDepthAt(double x, double y) {
 		Point2D[] points2d = new Point2D[points.length];
 		for (int i = 0; i < points.length; i++) {
-			points2d[i] = new Point2D(points[i].x, points[i].y);
+			points2d[i] = PointConversionUtils.convert(points[i], false);
 		}
 		
 		if (!PlaneUtils.contains(x, y, points2d)) {
@@ -156,11 +155,9 @@ public class Face implements ITransformable {
 			}
 		}
 		if (image != null) {
-			Polygon polygon = new Polygon();
 			Point2D[] points2d = new Point2D[points.length];
 			for (int i = 0; i < points.length; i++) {
-				Point2D p = points2d[i] = PointConversionUtils.convert(points[i]);
-				polygon.addPoint((int) p.x, (int) p.y);
+				points2d[i] = PointConversionUtils.convert(points[i], true);
 			}
 			
 			BufferedImage image = ImageUtils.multiply(ImageUtils.copyImage(this.image), lightRatio);
