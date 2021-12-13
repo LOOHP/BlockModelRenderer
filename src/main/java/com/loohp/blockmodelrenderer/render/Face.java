@@ -7,9 +7,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
-import com.loohp.blockmodelrenderer.utls.ImageUtils;
-import com.loohp.blockmodelrenderer.utls.PlaneUtils;
-import com.loohp.blockmodelrenderer.utls.PointConversionUtils;
+import com.loohp.blockmodelrenderer.utils.ImageUtils;
+import com.loohp.blockmodelrenderer.utils.PlaneUtils;
+import com.loohp.blockmodelrenderer.utils.PointConversionUtils;
 
 public class Face implements ITransformable {
 	

@@ -1,4 +1,4 @@
-package com.loohp.blockmodelrenderer.utls;
+package com.loohp.blockmodelrenderer.utils;
 
 import com.loohp.blockmodelrenderer.render.Point2D;
 import com.loohp.blockmodelrenderer.render.Point3D;

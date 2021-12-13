@@ -1,4 +1,4 @@
-package com.loohp.blockmodelrenderer.utls;
+package com.loohp.blockmodelrenderer.utils;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
