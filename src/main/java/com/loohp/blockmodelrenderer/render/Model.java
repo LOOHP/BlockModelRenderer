@@ -13,10 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
-import com.loohp.blockmodelrenderer.threading.GraphicsService;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class Model implements ITransformable {
 	
@@ -71,29 +69,23 @@ public class Model implements ITransformable {
 	
 	public void render(int w, int h, Graphics2D g, BufferedImage image) {
 		AffineTransform transform = g.getTransform();
-		Map<BufferedImage, ZBuffer> data = new LinkedHashMap<>();
-		List<Future<?>> tasks = new ArrayList<>();
+		Map<ZBuffer, BufferedImage> data = new LinkedHashMap<>();
 		for (Face face : faces) {
-			tasks.add(GraphicsService.execute(() -> {
-				BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-				Graphics2D g2 = img.createGraphics();
-				g2.setTransform(transform);
-				ZBuffer z = new ZBuffer(w, h, (int) g.getTransform().getTranslateX(), (int) g.getTransform().getTranslateY());
-				face.render(g2, z);
-				g2.dispose();
-				z.setCenter(0, 0);
-				data.put(img, z);
-			}));
+			BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D g2 = img.createGraphics();
+			g2.setTransform(transform);
+			ZBuffer z = new ZBuffer(w, h, (int) g.getTransform().getTranslateX(), (int) g.getTransform().getTranslateY());
+			face.render(g2, z);
+			g2.dispose();
+			z.setCenter(0, 0);
+			data.put(z, img);
 		}
-		tasks.forEach(each -> {
-			try {each.get();} catch (InterruptedException | ExecutionException e) {}
-		});
 		Graphics2D g2 = image.createGraphics();
-		Iterator<Entry<BufferedImage, ZBuffer>> itr = data.entrySet().iterator();
+		Iterator<Entry<ZBuffer, BufferedImage>> itr = data.entrySet().iterator();
 		while (itr.hasNext()) {
-			Entry<BufferedImage, ZBuffer> entry = itr.next();
-			if (entry.getValue().ignoreBuffer()) {
-				g2.drawImage(entry.getKey(), 0, 0, null);
+			Entry<ZBuffer, BufferedImage> entry = itr.next();
+			g2.drawImage(entry.getValue(), 0, 0, null);
+			if (entry.getKey().ignoreBuffer()) {
 				itr.remove();
 			}
 		}
@@ -101,16 +93,18 @@ public class Model implements ITransformable {
 			for (int x = 0; x < w; x++) {
 				int finalX = x;
 				int finalY = y;
-				data.entrySet().stream().sorted(Comparator.comparing(entry -> entry.getValue().get(finalX, finalY))).forEachOrdered(entry -> {
-					int color = entry.getKey().getRGB(finalX, finalY);
+				SortedMap<ZBuffer, BufferedImage> map = new TreeMap<>(Comparator.comparing(zBuffer -> zBuffer.get(finalX, finalY)));
+				map.putAll(data);
+				for (BufferedImage each : map.values()) {
+					int color = each.getRGB(x, y);
 					int alpha = (color >> 24) & 0xff;
 					if (alpha == 255) {
-						image.setRGB(finalX, finalY, color);
+						image.setRGB(x, y, color);
 					} else if (alpha != 0) {
 						g2.setColor(new Color(color, true));
-						g2.drawPolygon(new int[] {finalX}, new int[] {finalY}, 1);
+						g2.drawLine(x, y, x, y);
 					}
-				});
+				}
 			}
 		}
 		g2.dispose();
