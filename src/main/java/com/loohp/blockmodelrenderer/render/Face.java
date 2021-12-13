@@ -153,8 +153,11 @@ public class Face implements ITransformable {
 			yAxis.rotateAroundAxis(xAxis, x);
 			zAxis.rotateAroundAxis(xAxis, x);
 			v.rotateAroundAxis(yAxis, y);
+			xAxis.rotateAroundAxis(yAxis, y);
 			zAxis.rotateAroundAxis(yAxis, y);
 			v.rotateAroundAxis(zAxis, z);
+			xAxis.rotateAroundAxis(zAxis, z);
+			yAxis.rotateAroundAxis(zAxis, z);
 			point.x = v.getX();
 			point.y = v.getY();
 			point.z = v.getZ();
