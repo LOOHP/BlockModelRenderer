@@ -6,6 +6,6 @@ public interface ITransformable {
 	
 	public void translate(double x, double y, double z);
 	
-	public void rotate(double x, double y, double z);
+	public void rotate(double x, double y, double z, boolean saveAxis);
 
 }

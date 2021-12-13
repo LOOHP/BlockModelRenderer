@@ -178,9 +178,9 @@ public class Hexahedron implements ITransformable {
 		sortFaces();
 	}
 	
-	public void rotate(double x, double y, double z) {
+	public void rotate(double x, double y, double z, boolean saveAxis) {
 		for (Face face : ordered) {
-			face.rotate(x, y, z);
+			face.rotate(x, y, z, saveAxis);
 		}
 		sortFaces();
 	}

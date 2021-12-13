@@ -19,6 +19,7 @@ public class Face implements ITransformable {
 	protected Face oppositeFace;
 	private double lightRatio;
 	private Point3D[] points;
+	private Vector[][] axis;
 	protected byte priority;
 	private boolean ignoreZFight;
 	
@@ -32,8 +33,10 @@ public class Face implements ITransformable {
 		this.ignoreZFight = ignoreZFight;
 		this.image = image == null ? null : ImageUtils.copyImage(image);
 		this.points = new Point3D[points.length];
+		this.axis = new Vector[points.length][];
 		for (int i = 0; i < points.length; i++) {
 			this.points[i] = points[i].clone();
+			this.axis[i] = new Vector[] {new Vector(1, 0, 0), new Vector(0, 1, 0), new Vector(0, 0, 1)};
 		}
 	}
 	
@@ -130,11 +133,31 @@ public class Face implements ITransformable {
 		return Stream.of(points).mapToDouble(point -> point.z).average().getAsDouble();
 	}
 	
-	public void rotate(double x, double y, double z) {
-		for (Point3D point : points) {
-			PointConversionUtils.rotateAxisY(point, y);
-			PointConversionUtils.rotateAxisX(point, x);
-			PointConversionUtils.rotateAxisZ(point, z);
+	public void rotate(double x, double y, double z, boolean saveAxis) {
+		x = Math.toRadians(x);
+		y = Math.toRadians(y);
+		z = Math.toRadians(z);
+		Vector origin = new Vector(0, 0, 0);
+		for (int i = 0; i < points.length; i++) {
+			Point3D point = points[i];
+			Vector xAxis = axis[i][0];
+			Vector yAxis = axis[i][1];
+			Vector zAxis = axis[i][2];
+			if (!saveAxis) {
+				xAxis = xAxis.clone();
+				yAxis = yAxis.clone();
+				zAxis = zAxis.clone();
+			}
+			Vector v = new Vector(point.x, point.y, point.z).subtract(origin);
+			v.rotateAroundAxis(xAxis, x);
+			yAxis.rotateAroundAxis(xAxis, x);
+			zAxis.rotateAroundAxis(xAxis, x);
+			v.rotateAroundAxis(yAxis, y);
+			zAxis.rotateAroundAxis(yAxis, y);
+			v.rotateAroundAxis(zAxis, z);
+			point.x = v.getX();
+			point.y = v.getY();
+			point.z = v.getZ();
 		}
 	}
 	

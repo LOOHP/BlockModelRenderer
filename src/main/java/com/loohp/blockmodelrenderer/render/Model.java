@@ -38,9 +38,9 @@ public class Model implements ITransformable {
 		return components;
 	}
 	
-	public void rotate(double x, double y, double z) {
+	public void rotate(double x, double y, double z, boolean saveAxis) {
 		for (Hexahedron hexahedron : components) {
-			hexahedron.rotate(x, y, z);
+			hexahedron.rotate(x, y, z, saveAxis);
 		}
 		sortFaces();
 	}
