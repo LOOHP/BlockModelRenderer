@@ -84,8 +84,8 @@ public class Model implements ITransformable {
 		Iterator<Entry<ZBuffer, BufferedImage>> itr = data.entrySet().iterator();
 		while (itr.hasNext()) {
 			Entry<ZBuffer, BufferedImage> entry = itr.next();
-			g2.drawImage(entry.getValue(), 0, 0, null);
 			if (entry.getKey().ignoreBuffer()) {
+				g2.drawImage(entry.getValue(), 0, 0, null);
 				itr.remove();
 			}
 		}
