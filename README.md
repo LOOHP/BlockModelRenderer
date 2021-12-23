@@ -22,7 +22,7 @@ Used in **[InteractiveChat-DiscordSRV-Addon](https://github.com/LOOHP/Interactiv
   <groupId>com.loohp</groupId>
   <artifactId>BlockModelRenderer</artifactId>
   <version>VERSION</version>
-  <scope>provided</scope>
+  <scope>compile</scope>
 </dependency>
 ```
 Replace `VERSION` with the version number.
