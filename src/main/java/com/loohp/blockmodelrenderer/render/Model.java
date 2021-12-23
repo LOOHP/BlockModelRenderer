@@ -33,7 +33,14 @@ public class Model implements ITransformable {
 	public Model(Hexahedron... components) {
 		this(new ArrayList<>(Arrays.asList(components)));
 	}
-
+	
+	public void append(Model model) {
+		for (Hexahedron hexahedron : model.components) {
+			this.faces.addAll(hexahedron.getFaces());
+		}
+		sortFaces();
+	}
+	
 	public List<Hexahedron> getComponents() {
 		return components;
 	}
