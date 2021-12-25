@@ -74,47 +74,53 @@ public class Model implements ITransformable {
 		Collections.sort(faces, Face.AVERAGE_DEPTH_COMPARATOR);
 	}
 	
-	public void render(int w, int h, Graphics2D g, BufferedImage image) {
-		AffineTransform transform = g.getTransform();
-		Map<ZBuffer, BufferedImage> data = new LinkedHashMap<>();
-		for (Face face : faces) {
-			BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-			Graphics2D g2 = img.createGraphics();
-			g2.setTransform(transform);
-			ZBuffer z = new ZBuffer(w, h, (int) g.getTransform().getTranslateX(), (int) g.getTransform().getTranslateY());
-			face.render(g2, z);
-			g2.dispose();
-			z.setCenter(0, 0);
-			data.put(z, img);
-		}
-		Graphics2D g2 = image.createGraphics();
-		Iterator<Entry<ZBuffer, BufferedImage>> itr = data.entrySet().iterator();
-		while (itr.hasNext()) {
-			Entry<ZBuffer, BufferedImage> entry = itr.next();
-			if (entry.getKey().ignoreBuffer()) {
-				g2.drawImage(entry.getValue(), 0, 0, null);
-				itr.remove();
+	public void render(int w, int h, Graphics2D g, BufferedImage image, boolean useZBuffer) {
+		if (useZBuffer) {
+			AffineTransform transform = g.getTransform();
+			Map<ZBuffer, BufferedImage> data = new LinkedHashMap<>();
+			for (Face face : faces) {
+				BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+				Graphics2D g2 = img.createGraphics();
+				g2.setTransform(transform);
+				ZBuffer z = new ZBuffer(w, h, (int) g.getTransform().getTranslateX(), (int) g.getTransform().getTranslateY());
+				face.render(g2, z);
+				g2.dispose();
+				z.setCenter(0, 0);
+				data.put(z, img);
 			}
-		}
-		for (int y = 0; y < h; y++) {
-			for (int x = 0; x < w; x++) {
-				int finalX = x;
-				int finalY = y;
-				SortedMap<ZBuffer, BufferedImage> map = new TreeMap<>(Comparator.comparing(zBuffer -> zBuffer.get(finalX, finalY)));
-				map.putAll(data);
-				for (BufferedImage each : map.values()) {
-					int color = each.getRGB(x, y);
-					int alpha = (color >> 24) & 0xff;
-					if (alpha == 255) {
-						image.setRGB(x, y, color);
-					} else if (alpha != 0) {
-						g2.setColor(new Color(color, true));
-						g2.drawLine(x, y, x, y);
+			Graphics2D g2 = image.createGraphics();
+			Iterator<Entry<ZBuffer, BufferedImage>> itr = data.entrySet().iterator();
+			while (itr.hasNext()) {
+				Entry<ZBuffer, BufferedImage> entry = itr.next();
+				if (entry.getKey().ignoreBuffer()) {
+					g2.drawImage(entry.getValue(), 0, 0, null);
+					itr.remove();
+				}
+			}
+			for (int y = 0; y < h; y++) {
+				for (int x = 0; x < w; x++) {
+					int finalX = x;
+					int finalY = y;
+					SortedMap<ZBuffer, BufferedImage> map = new TreeMap<>(Comparator.comparing(zBuffer -> zBuffer.get(finalX, finalY)));
+					map.putAll(data);
+					for (BufferedImage each : map.values()) {
+						int color = each.getRGB(x, y);
+						int alpha = (color >> 24) & 0xff;
+						if (alpha == 255) {
+							image.setRGB(x, y, color);
+						} else if (alpha != 0) {
+							g2.setColor(new Color(color, true));
+							g2.drawLine(x, y, x, y);
+						}
 					}
 				}
 			}
+			g2.dispose();
+		} else {
+			for (Face face : faces) {
+				face.render(g, null);
+			}
 		}
-		g2.dispose();
 	}
 
 }

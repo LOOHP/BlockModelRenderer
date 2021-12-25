@@ -234,10 +234,10 @@ public class Face implements ITransformable {
 			
 			transform.concatenate(AffineTransform.getShearInstance(dropOffX, dropOffY));
 			if ((points2d[1].x - points2d[0].x) < 0) {
-				transform.concatenate(AffineTransform.getScaleInstance(-1, 1));
+				scaleX = -scaleX;
 			}
 			if ((points2d[3].y - points2d[0].y) < 0) {
-				transform.concatenate(AffineTransform.getScaleInstance(1, -1));
+				scaleY = -scaleY;
 			}
 			transform.concatenate(AffineTransform.getScaleInstance(scaleX, scaleY));
 			g.transform(transform);
