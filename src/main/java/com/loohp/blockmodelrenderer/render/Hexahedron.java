@@ -142,6 +142,30 @@ public class Hexahedron implements ITransformable {
 		southFace.image = images[4];
 		westFace.image = images[5];
 	}
+	
+	public void setOverlay(BufferedImage[] images) {
+		if (images.length != 6) {
+			throw new IllegalArgumentException("images length must be 6");
+		}
+		upFace.overlay = images[0];
+		downFace.overlay = images[1];
+		northFace.overlay = images[2];
+		eastFace.overlay = images[3];
+		southFace.overlay = images[4];
+		westFace.overlay = images[5];
+	}
+	
+	public void setOverlayAdditionFactor(double[] factors) {
+		if (factors.length != 6) {
+			throw new IllegalArgumentException("factors length must be 6");
+		}
+		upFace.overlayAdditionFactor = factors[0];
+		downFace.overlayAdditionFactor = factors[1];
+		northFace.overlayAdditionFactor = factors[2];
+		eastFace.overlayAdditionFactor = factors[3];
+		southFace.overlayAdditionFactor = factors[4];
+		westFace.overlayAdditionFactor = factors[5];
+	}
 
 	public List<Face> getFaces() {
 		return ordered;

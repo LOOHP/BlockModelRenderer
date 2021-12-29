@@ -16,6 +16,8 @@ public class Face implements ITransformable {
 	public static final Comparator<Face> AVERAGE_DEPTH_COMPARATOR = Comparator.comparing(face -> face.getAverageZ());
 	
 	public BufferedImage image;
+	public BufferedImage overlay;
+	public double overlayAdditionFactor;
 	protected Face oppositeFace;
 	private double lightRatio;
 	private Point3D[] points;
@@ -32,6 +34,8 @@ public class Face implements ITransformable {
 		this.priority = 1;
 		this.ignoreZFight = ignoreZFight;
 		this.image = image == null ? null : ImageUtils.copyImage(image);
+		this.overlay = null;
+		this.overlayAdditionFactor = 1;
 		this.points = new Point3D[points.length];
 		this.axis = new Vector[points.length][];
 		for (int i = 0; i < points.length; i++) {
@@ -195,6 +199,9 @@ public class Face implements ITransformable {
 			}
 			
 			BufferedImage image = ImageUtils.multiply(ImageUtils.copyImage(this.image), lightRatio);
+			if (overlay != null) {
+				image = ImageUtils.additionNonTransparent(image, overlay, overlayAdditionFactor);
+			}
 			
 			double w = 0;
 			double h = 0;
