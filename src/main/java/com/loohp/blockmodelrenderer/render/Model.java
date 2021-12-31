@@ -9,12 +9,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.TreeMap;
+
+import com.loohp.blockmodelrenderer.utils.ValuePairs;
 
 public class Model implements ITransformable {
 	
@@ -36,6 +33,7 @@ public class Model implements ITransformable {
 	
 	public void append(Model model) {
 		for (Hexahedron hexahedron : model.components) {
+			this.components.add(hexahedron);
 			this.faces.addAll(hexahedron.getFaces());
 		}
 		sortFaces();
@@ -77,7 +75,7 @@ public class Model implements ITransformable {
 	public void render(int w, int h, Graphics2D g, BufferedImage image, boolean useZBuffer) {
 		if (useZBuffer) {
 			AffineTransform transform = g.getTransform();
-			Map<ZBuffer, BufferedImage> data = new LinkedHashMap<>();
+			List<ValuePairs<ZBuffer, BufferedImage>> data = new ArrayList<>();
 			for (Face face : faces) {
 				BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 				Graphics2D g2 = img.createGraphics();
@@ -86,14 +84,14 @@ public class Model implements ITransformable {
 				face.render(g2, z);
 				g2.dispose();
 				z.setCenter(0, 0);
-				data.put(z, img);
+				data.add(new ValuePairs<>(z, img));
 			}
 			Graphics2D g2 = image.createGraphics();
-			Iterator<Entry<ZBuffer, BufferedImage>> itr = data.entrySet().iterator();
+			Iterator<ValuePairs<ZBuffer, BufferedImage>> itr = data.iterator();
 			while (itr.hasNext()) {
-				Entry<ZBuffer, BufferedImage> entry = itr.next();
-				if (entry.getKey().ignoreBuffer()) {
-					g2.drawImage(entry.getValue(), 0, 0, null);
+				ValuePairs<ZBuffer, BufferedImage> entry = itr.next();
+				if (entry.getFirst().ignoreBuffer()) {
+					g2.drawImage(entry.getSecond(), 0, 0, null);
 					itr.remove();
 				}
 			}
@@ -101,10 +99,9 @@ public class Model implements ITransformable {
 				for (int x = 0; x < w; x++) {
 					int finalX = x;
 					int finalY = y;
-					SortedMap<ZBuffer, BufferedImage> map = new TreeMap<>(Comparator.comparing(zBuffer -> zBuffer.get(finalX, finalY)));
-					map.putAll(data);
-					for (BufferedImage each : map.values()) {
-						int color = each.getRGB(x, y);
+					Collections.sort(data, Comparator.comparing(entry -> entry.getFirst().get(finalX, finalY)));
+					for (ValuePairs<ZBuffer, BufferedImage> each : data) {
+						int color = each.getSecond().getRGB(x, y);
 						int alpha = (color >> 24) & 0xff;
 						if (alpha == 255) {
 							image.setRGB(x, y, color);
