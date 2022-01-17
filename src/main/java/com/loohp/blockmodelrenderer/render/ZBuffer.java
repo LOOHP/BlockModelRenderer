@@ -1,6 +1,9 @@
 package com.loohp.blockmodelrenderer.render;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
+
+import com.loohp.blockmodelrenderer.utils.MathUtils;
 
 public class ZBuffer {
 	
@@ -9,7 +12,6 @@ public class ZBuffer {
 	private int w;
 	private int h;
 	private double[][] zbuffer;
-	private boolean ignoreBuffer;
 
 	public ZBuffer(int w, int h, int centerX, int centerY) {
 		this.centerX = centerX;
@@ -20,15 +22,6 @@ public class ZBuffer {
 		for (int x = 0; x < w; x++) {
 			Arrays.fill(zbuffer[x], -Double.MAX_VALUE);
 		}
-		this.ignoreBuffer = false;
-	}
-	
-	public boolean ignoreBuffer() {
-		return ignoreBuffer;
-	}
-
-	public void setIgnoreBuffer(boolean ignoreBuffer) {
-		this.ignoreBuffer = ignoreBuffer;
 	}
 
 	public double get(int x, int y) {
@@ -37,6 +30,19 @@ public class ZBuffer {
 	
 	public void set(int x, int y, double value) {
 		this.zbuffer[x + this.centerX][y + this.centerY] = value;
+	}
+	
+	public boolean compareAndSet(int x, int y, double value) {
+		return compareAndSet(x, y, value, () -> true);
+	}
+	
+	public boolean compareAndSet(int x, int y, double value, Supplier<Boolean> predicate) {
+		double originalValue = this.zbuffer[x + this.centerX][y + this.centerY];
+		if (MathUtils.greaterThanOrEquals(value, originalValue) && predicate.get()) {
+			this.zbuffer[x + this.centerX][y + this.centerY] = Math.max(value, originalValue);
+			return true;
+		}
+		return false;
 	}
 
 	public int getCenterX() {

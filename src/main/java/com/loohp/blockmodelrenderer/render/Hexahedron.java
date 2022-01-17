@@ -197,7 +197,7 @@ public class Hexahedron implements ITransformable {
 
 	public void render(Graphics2D g) {
 		for (Face face : getFaces()) {
-			face.render(g, null);
+			face.render(g);
 		}
 		sortFaces();
 	}

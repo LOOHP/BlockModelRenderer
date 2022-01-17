@@ -21,4 +21,9 @@ public class Point3D {
 		return Math.sqrt((this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y) + (this.z - other.z) * (this.z - other.z));
 	}
 	
+	@Override
+	public String toString() {
+		return "[x=" + x + ", y=" + y + ", z=" + z + "]";
+	}
+	
 }

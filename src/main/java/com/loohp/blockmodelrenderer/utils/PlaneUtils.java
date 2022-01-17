@@ -3,66 +3,17 @@ package com.loohp.blockmodelrenderer.utils;
 import com.loohp.blockmodelrenderer.render.Point2D;
 
 public class PlaneUtils {
-	
-	public static boolean contains(double x, double y, Point2D[] points) {
-        int hits = 0;
 
-        double lastx = points[points.length - 1].x;
-        double lasty = points[points.length - 1].y;
-        double curx;
-		double cury;
-
-        // Walk the edges of the polygon
-        for (int i = 0; i < points.length; lastx = curx, lasty = cury, i++) {
-            curx = points[i].x;
-            cury = points[i].y;
-
-            if (cury == lasty) {
-                continue;
-            }
-
-            double leftx;
-            if (curx < lastx) {
-                if (x >= lastx) {
-                    continue;
-                }
-                leftx = curx;
-            } else {
-                if (x >= curx) {
-                    continue;
-                }
-                leftx = lastx;
-            }
-
-            double test1, test2;
-            if (cury < lasty) {
-                if (y < cury || y >= lasty) {
-                    continue;
-                }
-                if (x < leftx) {
-                    hits++;
-                    continue;
-                }
-                test1 = x - curx;
-                test2 = y - cury;
-            } else {
-                if (y < lasty || y >= cury) {
-                    continue;
-                }
-                if (x < leftx) {
-                    hits++;
-                    continue;
-                }
-                test1 = x - lastx;
-                test2 = y - lasty;
-            }
-
-            if (test1 < (test2 / (lasty - cury) * (lastx - curx))) {
-                hits++;
-            }
-        }
-
-        return ((hits & 1) != 0);
-    }
+	public static boolean contains(Point2D test, Point2D[] points) {
+		int i;
+		int j;
+		boolean result = false;
+		for (i = 0, j = points.length - 1; i < points.length; j = i++) {
+			if (MathUtils.greaterThanOrEquals(points[i].y, test.y) != MathUtils.greaterThanOrEquals(points[j].y, test.y) && MathUtils.lessThan(test.x, (points[j].x - points[i].x) * (test.y - points[i].y) / (points[j].y - points[i].y) + points[i].x)) {
+				result = !result;
+			}
+		}
+		return result;
+	}
 
 }
