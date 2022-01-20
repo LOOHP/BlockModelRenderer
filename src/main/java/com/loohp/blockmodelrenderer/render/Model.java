@@ -95,7 +95,7 @@ public class Model implements ITransformable {
 		int[] sourceColors = source.getRGB(0, 0, w, h, null, 0, w);
 		int pixelCount = w * h;
 		int threadCount = service.getMaximumPoolSize();
-		List<Future<?>> futures = new ArrayList<>(threadCount);
+		List<Future<?>> futures = new ArrayList<>((pixelCount / PIXEL_PER_THREAD) + 1);
 		for (int i = 0; i < pixelCount; i += PIXEL_PER_THREAD) {
 			int currentI = i;
 			futures.add(service.submit(() -> {
