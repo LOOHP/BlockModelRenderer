@@ -7,8 +7,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import com.loohp.blockmodelrenderer.utils.ColorUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
@@ -82,7 +82,7 @@ public class Model implements ITransformable {
 		Collections.sort(faces, Face.AVERAGE_DEPTH_COMPARATOR);
 	}
 	
-	public TaskCompletation render(BufferedImage source, boolean useZBuffer, AffineTransform baseTransform, ThreadPoolExecutor service) {
+	public TaskCompletation render(BufferedImage source, boolean useZBuffer, AffineTransform baseTransform, ExecutorService service) {
 		List<BakeResult> bakes = new LinkedList<>();
 		for (Face face : faces) {
 			BakeResult result = face.bake(baseTransform);
@@ -94,7 +94,6 @@ public class Model implements ITransformable {
 		int h = source.getHeight();
 		int[] sourceColors = source.getRGB(0, 0, w, h, null, 0, w);
 		int pixelCount = w * h;
-		int threadCount = service.getMaximumPoolSize();
 		List<Future<?>> futures = new ArrayList<>((pixelCount / PIXEL_PER_THREAD) + 1);
 		for (int i = 0; i < pixelCount; i += PIXEL_PER_THREAD) {
 			int currentI = i;
