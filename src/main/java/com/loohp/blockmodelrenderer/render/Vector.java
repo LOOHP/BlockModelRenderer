@@ -85,6 +85,13 @@ public class Vector {
 		return this;
 	}
 	
+	public Vector invert() {
+		this.x = -this.x;
+		this.y = -this.y;
+		this.z = -this.z;
+		return this;
+	}
+	
 	 public Vector add(Vector v) {
          this.x = x + v.x;
          this.y = y + v.y;
@@ -114,8 +121,12 @@ public class Vector {
 	     return x * x + y * y + z * z;
 	 }
 	 
+	 public double distanceSquared(Vector other) {
+		 return (this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y) + (this.z - other.z) * (this.z - other.z);
+	 }
+	 
 	 public double distance(Vector other) {
-		 return Math.sqrt((this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y) + (this.z - other.z) * (this.z - other.z));
+		 return Math.sqrt(distanceSquared(other));
 	 }
 	 
      public Vector rotateAroundX(double angle) {

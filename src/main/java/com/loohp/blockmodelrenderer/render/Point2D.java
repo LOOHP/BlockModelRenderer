@@ -15,8 +15,12 @@ public class Point2D {
 		return new Point2D(this.x, this.y);
 	}
 	
+	public double distanceSquared(Point2D other) {
+		return (this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y);
+	}
+	
 	public double distance(Point2D other) {
-		return Math.sqrt((this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y));
+		return Math.sqrt(distanceSquared(other));
 	}
 	
 	public Point2D multiply(double m) {

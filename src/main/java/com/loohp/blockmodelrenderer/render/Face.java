@@ -1,6 +1,5 @@
 package com.loohp.blockmodelrenderer.render;
 
-import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
@@ -9,7 +8,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import com.loohp.blockmodelrenderer.utils.ColorUtils;
 import com.loohp.blockmodelrenderer.utils.ImageUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 import com.loohp.blockmodelrenderer.utils.PlaneUtils;
@@ -150,6 +148,14 @@ public class Face implements ITransformable {
 		return Stream.of(points).mapToDouble(point -> point.z).average().getAsDouble();
 	}
 	
+	public Point3D getCenterPoint() {
+		return new Point3D(getAverageX(), getAverageY(), getAverageZ());
+	}
+	
+	public Vector getCenterVector() {
+		return new Vector(getAverageX(), getAverageY(), getAverageZ());
+	}
+	
 	public void rotate(double x, double y, double z, boolean saveAxis) {
 		x = Math.toRadians(x);
 		y = Math.toRadians(y);
@@ -193,16 +199,40 @@ public class Face implements ITransformable {
 		}
 	}
 	
-	public void render(Graphics2D g) {
-		render(g, null, null);
+	@Override
+	public void flipAboutPlane(boolean x, boolean y, boolean z) {
+		for (Point3D point : points) {
+			PointConversionUtils.flipAboutPlane(point, x, y, z);
+		}
+	}
+	
+	@Override
+	public void updateLighting(Vector direction, double ambient, double max) {
+		Vector normal = new Vector(this.points[1], this.points[2]).cross(new Vector(this.points[0], this.points[1])).normalize();
+		if (oppositeFace != null) {
+			Vector normalInvert = normal.clone().invert();
+			Vector faceVector = this.getCenterVector();
+			Vector oppositeFaceVector = oppositeFace.getCenterVector();
+			if (faceVector.clone().add(normal).distanceSquared(oppositeFaceVector) < faceVector.clone().add(normalInvert).distanceSquared(oppositeFaceVector)) {
+				normal = normalInvert;
+			}
+		}
+		double dot = normal.dot(direction);
+		double sign = Math.signum(dot);
+		dot = sign * dot * dot;
+		dot = (dot + 1.0) / 2.0 * (1.0 - ambient);
+		
+		lightRatio = Math.min(Math.min(max, 1.0), Math.max(0.0, ambient + dot));
 	}
 
-	public void render(Graphics2D masterG, BufferedImage masterImage, ZBuffer zBuffer) {
-		if (image != null) {
+	public BakeResult bake(AffineTransform baseTransform) {
+		if (image == null) {
+			return null;
+		} else {
 			if (!ignoreZFight) {
 				if (oppositeFace != null && AVERAGE_DEPTH_COMPARATOR.compare(this, oppositeFace) <= 0) {
 					if (oppositeFace.priority > this.priority || oppositeFace.getAverageZ() - this.getAverageZ() > 0.1) {
-						return;
+						return null;
 					}
 				}
 			}
@@ -241,24 +271,13 @@ public class Face implements ITransformable {
 				first = false;
 			} while (w < 0.0000000001 || h < 0.0000000001);
 			
-			AffineTransform orginalTransform = (AffineTransform) masterG.getTransform().clone();
-			
-			Graphics2D g;
-			BufferedImage temp = null;
-			if (zBuffer == null || ignoreZFight) {
-				g = masterG;
-			} else {
-				temp = new BufferedImage(masterImage.getWidth(), masterImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
-				g = temp.createGraphics();
-				g.setTransform(orginalTransform);
-			}
-			
-			AffineTransform transform = AffineTransform.getTranslateInstance(points2d[0].x, points2d[0].y);
+			AffineTransform transform = (AffineTransform) baseTransform.clone();
+			transform.concatenate(AffineTransform.getTranslateInstance(points2d[0].x, points2d[0].y));
 			double dX1 = points2d[3].x - points2d[0].x;
 			double dY1 = points2d[1].y - points2d[0].y;
 			
 			double dY2 = points2d[3].y - points2d[0].y;
-			double dX2 = points2d[1].x - points2d[0].x;
+			double dX2 = points2d[1].x - points2d[0].x;	
 			
 			double dropOffX = dX1 / dY2;
 			double dropOffY = dY1 / dX2;
@@ -271,48 +290,13 @@ public class Face implements ITransformable {
 				scaleY = -scaleY;
 			}
 			transform.concatenate(AffineTransform.getScaleInstance(scaleX, scaleY));
-			g.transform(transform);
-			g.drawImage(image, 0, 0, null);
 			
-			if (temp != null) {
-				int xDiff = zBuffer.getCenterX();
-				int yDiff = zBuffer.getCenterY();
-				for (int y = zBuffer.getMinY(); y < zBuffer.getMaxY(); y++) {
-					for (int x = zBuffer.getMinX(); x < zBuffer.getMaxX(); x++) {
-						int fixedX = x + xDiff;
-						int fixedY = y + yDiff;
-						int masterColor = masterImage.getRGB(fixedX, fixedY);
-						int masterAlpha = ColorUtils.getAlpha(masterColor);
-						int color = temp.getRGB(fixedX, fixedY);
-						int alpha = ColorUtils.getAlpha(color);
-						boolean isCloser = zBuffer.compareAndSet(x, y, getDepthAt(x / orginalTransform.getScaleX(), -y / orginalTransform.getScaleY()), () -> alpha > 0);
-						if (isCloser || masterAlpha < 255) {
-							if (!isCloser) {
-								masterImage.setRGB(fixedX, fixedY, ColorUtils.composite(masterColor, color));
-							} else if (alpha >= 255) {
-								masterImage.setRGB(fixedX, fixedY, color);
-							} else if (alpha > 0) {
-								masterImage.setRGB(fixedX, fixedY, ColorUtils.composite(color, masterColor));
-							}
-						}
-					}
-				}
-			}
-			
-			if (temp == null) {
-				g.setTransform(orginalTransform);
-			} else {
-				g.dispose();
-			}
+			return new BakeResult(image, transform, (x, y) -> getDepthAt((x - baseTransform.getTranslateX()) / baseTransform.getScaleX(), -(y - baseTransform.getTranslateY()) / baseTransform.getScaleY()), ignoreZFight);
 		}
 	}
 
 	public double getLightRatio() {
 		return lightRatio;
-	}
-
-	public void setLightRatio(double lightRatio) {
-		this.lightRatio = lightRatio;
 	}
 
 }

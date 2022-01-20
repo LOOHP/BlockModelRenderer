@@ -17,8 +17,16 @@ public class Point3D {
 		return new Point3D(this.x, this.y, this.z);
 	}
 	
+	public double distanceSquared(Point3D other) {
+		return (this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y) + (this.z - other.z) * (this.z - other.z);
+	}
+	
 	public double distance(Point3D other) {
-		return Math.sqrt((this.x - other.x) * (this.x - other.x) + (this.y - other.y) * (this.y - other.y) + (this.z - other.z) * (this.z - other.z));
+		return Math.sqrt(distanceSquared(other));
+	}
+	
+	public Vector toVector() {
+		return new Vector(x, y, z);
 	}
 	
 	@Override

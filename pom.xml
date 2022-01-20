@@ -5,7 +5,7 @@
 	<groupId>com.loohp</groupId>
 	<artifactId>BlockModelRenderer</artifactId>
 	<name>BlockModelRenderer</name>
-	<version>1.0.4.2</version>
+	<version>1.0.5.0</version>
 	
 	<packaging>jar</packaging>
 

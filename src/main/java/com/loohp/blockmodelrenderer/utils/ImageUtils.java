@@ -2,6 +2,8 @@ package com.loohp.blockmodelrenderer.utils;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsEnvironment;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
@@ -16,6 +18,34 @@ public class ImageUtils {
 	
 	public static final Color TEXT_BACKGROUND_COLOR = new Color(0, 0, 0, 180);
 	public static final double CHAT_COLOR_BACKGROUND_FACTOR = 0.19;
+	
+	public static BufferedImage toCompatibleImage(BufferedImage image) {
+	    try {
+		    GraphicsConfiguration gfxConfig = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+	
+		    if (image.getColorModel().equals(gfxConfig.getColorModel())) {
+		        return image;
+		    }
+	
+		    BufferedImage newImage = gfxConfig.createCompatibleImage(image.getWidth(), image.getHeight(), image.getTransparency());
+	
+		    Graphics2D g2d = newImage.createGraphics();
+	
+		    g2d.drawImage(image, 0, 0, null);
+		    g2d.dispose();
+	
+		    return newImage;
+	    } catch (Exception e) {
+	    	return image;
+	    }
+	}
+	
+	public static int getRGB(BufferedImage image, int x, int y) {
+		if (x < 0 || y < 0 || x >= image.getWidth() || y >= image.getHeight()) {
+			return 0;
+		}
+		return image.getRGB(x, y);
+	}
 	
 	public static BufferedImage downloadImage(String link) throws IOException {
 		URL url = new URL(link);
@@ -32,6 +62,9 @@ public class ImageUtils {
 	}
 	
 	public static BufferedImage rotateImageByDegrees(BufferedImage img, double angle) {
+		if (angle % 360 == 0) {
+			return img;
+		}
 	    double rads = Math.toRadians(angle);
 	    double sin = Math.abs(Math.sin(rads));
 	    double cos = Math.abs(Math.cos(rads));
@@ -152,16 +185,42 @@ public class ImageUtils {
 		return image;
 	}
 	
-	public static BufferedImage multiply(BufferedImage image, double value) {
+	public static BufferedImage add(BufferedImage image, int value) {
+		return add(image, value, value, value);
+	}
+	
+	public static BufferedImage add(BufferedImage image, int xValue, int yValue, int zValue) {
 		for (int y = 0; y < image.getHeight(); y++) {
 			for (int x = 0; x < image.getWidth(); x++) {
 				int colorValue = image.getRGB(x, y);
 				Color color = new Color(colorValue, true);
 				
 				if (color.getAlpha() != 0) {
-					int red = (int) (color.getRed() * value);
-					int green = (int) (color.getGreen() * value);
-					int blue = (int) (color.getBlue() * value);
+					int red = color.getRed() + xValue;
+					int green = color.getGreen() + yValue;
+					int blue = color.getBlue() + zValue;
+					color = new Color(red < 0 ? 0 : (red > 255 ? 255 : red), green < 0 ? 0 : (green > 255 ? 255 : green), blue < 0 ? 0 : (blue > 255 ? 255 : blue), color.getAlpha());
+					image.setRGB(x, y, color.getRGB());
+				}
+			}
+		}
+		return image;
+	}
+	
+	public static BufferedImage multiply(BufferedImage image, double value) {
+		return multiply(image, value, value, value);
+	}
+	
+	public static BufferedImage multiply(BufferedImage image, double xValue, double yValue, double zValue) {
+		for (int y = 0; y < image.getHeight(); y++) {
+			for (int x = 0; x < image.getWidth(); x++) {
+				int colorValue = image.getRGB(x, y);
+				Color color = new Color(colorValue, true);
+				
+				if (color.getAlpha() != 0) {
+					int red = (int) (color.getRed() * xValue);
+					int green = (int) (color.getGreen() * yValue);
+					int blue = (int) (color.getBlue() * zValue);
 					color = new Color(red < 0 ? 0 : (red > 255 ? 255 : red), green < 0 ? 0 : (green > 255 ? 255 : green), blue < 0 ? 0 : (blue > 255 ? 255 : blue), color.getAlpha());
 					image.setRGB(x, y, color.getRGB());
 				}
@@ -261,7 +320,7 @@ public class ImageUtils {
 	    return b;
 	}
 	
-	public static BufferedImage copyImage(BufferedImage source){
+	public static BufferedImage copyImage(BufferedImage source) {
 	    BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
 	    Graphics2D g = b.createGraphics();
 	    g.drawImage(source, 0, 0, null);
@@ -281,12 +340,13 @@ public class ImageUtils {
 	public static BufferedImage resizeImage(BufferedImage source, double factor) {
 		int w = (int) (source.getWidth() * factor);
 		int h = (int) (source.getHeight() * factor);
-		BufferedImage b = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-	    Graphics2D g = b.createGraphics();
-	    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-	    g.drawImage(source, 0, 0, w, h, null);
-	    g.dispose();
-	    return b;
+	    return resizeImageAbs(source, w, h);
+	}
+	
+	public static BufferedImage resizeImage(BufferedImage source, double factorX, double factorY) {
+		int w = (int) (source.getWidth() * factorX);
+		int h = (int) (source.getHeight() * factorY);
+	    return resizeImageAbs(source, w, h);
 	}
 	
 	public static BufferedImage resizeImageQuality(BufferedImage source, int width, int height) {
@@ -307,14 +367,20 @@ public class ImageUtils {
 	    return b;
 	}
 	
+	public static BufferedImage resizeImageFillWidth(BufferedImage source, int width) {
+		int height = (int) (source.getHeight() * ((double) width / (double) source.getWidth()));
+	    return resizeImageAbs(source, width, height);
+	}
+	
+	public static BufferedImage resizeImageFillHeight(BufferedImage source, int height) {
+		int width = (int) (source.getWidth() * ((double) height / (double) source.getHeight()));
+	    return resizeImageAbs(source, width, height);
+	}
+	
 	public static BufferedImage resizeImageStretch(BufferedImage source, int pixels) {
 		int w = source.getWidth() + pixels;
 		int h = source.getHeight() + pixels;
-		BufferedImage b = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-	    Graphics2D g = b.createGraphics();
-	    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-	    g.drawImage(source, 0, 0, w, h, null);
-	    g.dispose();
-	    return b;
+	    return resizeImageAbs(source, w, h);
 	}
+
 }

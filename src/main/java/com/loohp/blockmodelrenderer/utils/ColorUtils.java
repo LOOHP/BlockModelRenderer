@@ -32,7 +32,7 @@ public class ColorUtils {
 		return (color >> 24) & 0xFF;
 	}
 	
-	public static int getIntFromColor(int r, int g, int b, int a){
+	public static int getIntFromColor(int r, int g, int b, int a) {
 	    int red = (r << 16) & 0x00FF0000;
 	    int green = (g << 8) & 0x0000FF00;
 	    int blue = b & 0x000000FF;

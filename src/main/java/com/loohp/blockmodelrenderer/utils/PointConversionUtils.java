@@ -20,5 +20,17 @@ public class PointConversionUtils {
     	p.y *= y;
     	p.z *= z;
     }
+    
+    public static void flipAboutPlane(Point3D p, boolean x, boolean y, boolean z) {
+    	if (y && z) {
+    		p.x = -p.x;
+    	}
+    	if (x && z) {
+    		p.y = -p.y;
+    	}
+    	if (x && y) {
+    		p.z = -p.z;
+    	}
+    }
 
 }

@@ -1,6 +1,5 @@
 package com.loohp.blockmodelrenderer.render;
 
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +48,7 @@ public class Hexahedron implements ITransformable {
 			throw new IllegalArgumentException("images length must be 6");
 		}
 		return new Hexahedron(new Face(images[0], ignoreZFight, new Point3D(p1.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p1.x, p2.y, p2.z)), 
-							  new Face(images[1], ignoreZFight, new Point3D(p1.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p2.z)),
+							  new Face(images[1], ignoreZFight, new Point3D(p1.x, p1.y, p1.z), new Point3D(p1.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p1.z)),
 							  new Face(images[2], ignoreZFight, new Point3D(p2.x, p2.y, p1.z), new Point3D(p1.x, p2.y, p1.z), new Point3D(p1.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p1.z)),
 							  new Face(images[3], ignoreZFight, new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p2.z)),
 							  new Face(images[4], ignoreZFight, new Point3D(p1.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p2.z)),
@@ -194,13 +193,6 @@ public class Hexahedron implements ITransformable {
 	public Face getWestFace() {
 		return westFace;
 	}
-
-	public void render(Graphics2D g) {
-		for (Face face : getFaces()) {
-			face.render(g);
-		}
-		sortFaces();
-	}
 	
 	public void rotate(double x, double y, double z, boolean saveAxis) {
 		for (Face face : ordered) {
@@ -221,13 +213,18 @@ public class Hexahedron implements ITransformable {
 		}
 	}
 	
-	public void updateLightingRatio(double up, double down, double north, double east, double south, double west) {
-		this.upFace.setLightRatio(up);
-		this.downFace.setLightRatio(down);
-		this.northFace.setLightRatio(north);
-		this.eastFace.setLightRatio(east);
-		this.southFace.setLightRatio(south);
-		this.westFace.setLightRatio(west);
+	@Override
+	public void flipAboutPlane(boolean x, boolean y, boolean z) {
+		for (Face face : ordered) {
+			face.flipAboutPlane(x, y, z);
+		}
+	}
+	
+	@Override
+	public void updateLighting(Vector direction, double ambient, double max) {
+		for (Face face : ordered) {
+			face.updateLighting(direction, ambient, max);
+		}
 	}
 	
 	public void sortFaces() {

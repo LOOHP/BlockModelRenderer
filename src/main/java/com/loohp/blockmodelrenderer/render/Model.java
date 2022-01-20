@@ -1,13 +1,22 @@
 package com.loohp.blockmodelrenderer.render;
 
-import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+
+import com.loohp.blockmodelrenderer.utils.ColorUtils;
+import com.loohp.blockmodelrenderer.utils.MathUtils;
+import com.loohp.blockmodelrenderer.utils.TaskCompletation;
 
 public class Model implements ITransformable {
+	
+	public static final int PIXEL_PER_THREAD = 256;
 	
 	private List<Hexahedron> components;
 	private List<Face> faces;
@@ -56,9 +65,16 @@ public class Model implements ITransformable {
 		}
 	}
 	
-	public void updateLightingRatio(double up, double down, double north, double east, double south, double west) {
+	public void flipAboutPlane(boolean x, boolean y, boolean z) {
 		for (Hexahedron hexahedron : components) {
-			hexahedron.updateLightingRatio(up, down, north, east, south, west);
+			hexahedron.flipAboutPlane(x, y, z);
+		}
+	}
+	
+	@Override
+	public void updateLighting(Vector direction, double ambient, double max) {
+		for (Hexahedron hexahedron : components) {
+			hexahedron.updateLighting(direction, ambient, max);
 		}
 	}
 	
@@ -66,17 +82,72 @@ public class Model implements ITransformable {
 		Collections.sort(faces, Face.AVERAGE_DEPTH_COMPARATOR);
 	}
 	
-	public void render(Graphics2D g, BufferedImage image, boolean useZBuffer) {
-		if (useZBuffer) {
-			ZBuffer z = new ZBuffer(image.getWidth(), image.getHeight(), (int) g.getTransform().getTranslateX(), (int) g.getTransform().getTranslateY());
-			for (Face face : faces) {
-				face.render(g, image, z);
-			}
-		} else {
-			for (Face face : faces) {
-				face.render(g);
+	public TaskCompletation render(BufferedImage source, boolean useZBuffer, AffineTransform baseTransform, ThreadPoolExecutor service) {
+		List<BakeResult> bakes = new LinkedList<>();
+		for (Face face : faces) {
+			BakeResult result = face.bake(baseTransform);
+			if (result != null && result.hasInverseTransform()) {
+				bakes.add(result);
 			}
 		}
+		int w = source.getWidth();
+		int h = source.getHeight();
+		int[] sourceColors = source.getRGB(0, 0, w, h, null, 0, w);
+		int pixelCount = w * h;
+		int threadCount = service.getMaximumPoolSize();
+		List<Future<?>> futures = new ArrayList<>(threadCount);
+		for (int i = 0; i < pixelCount; i += PIXEL_PER_THREAD) {
+			int currentI = i;
+			futures.add(service.submit(() -> {
+				double[] pointSrc = new double[2];
+				double[] pointDes = new double[2];
+				for (int u = 0; u < PIXEL_PER_THREAD; u++) {
+					int position = currentI + u;
+					if (position >= pixelCount) {
+						break;
+					}
+					int sourceColor = sourceColors[position];
+					int x = position % w;
+					int y = position / w;
+					int newColor = sourceColor;
+					double z = -Double.MAX_VALUE;
+					pointSrc[0] = x;
+					pointSrc[1] = y;
+					for (BakeResult bake : bakes) {
+						bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
+						BufferedImage image = bake.getTexture();
+						if (MathUtils.greaterThanOrEquals(pointDes[0], 0.0) && MathUtils.greaterThanOrEquals(pointDes[1], 0.0) && MathUtils.lessThan(pointDes[0], image.getWidth()) && MathUtils.lessThan(pointDes[1], image.getHeight())) {
+							int imageColor = image.getRGB((int) pointDes[0], (int) pointDes[1]);
+							if (useZBuffer && !bake.ignoreZFight()) {
+								int imageAlpha = ColorUtils.getAlpha(imageColor);
+								int sourceAlpha = ColorUtils.getAlpha(sourceColor);
+								if (imageAlpha > 0) {
+									double depth = bake.getDepthAt(x, y);
+									if (MathUtils.greaterThanOrEquals(depth, z)) {
+										if (depth > z) {
+											z = depth;
+										}
+										if (imageAlpha >= 255) {
+											newColor = imageColor;
+										} else {
+											newColor = ColorUtils.composite(imageColor, newColor);
+										}
+									}
+								} else if (sourceAlpha < 255) {
+									newColor = ColorUtils.composite(newColor, imageColor);
+								}
+							} else {
+								newColor = ColorUtils.composite(imageColor, newColor);
+							}
+						}
+					}
+					if (newColor != sourceColor) {
+						source.setRGB(x, y, newColor);
+					}
+				}
+			}));
+		}
+		return new TaskCompletation(futures);
 	}
 
 }
