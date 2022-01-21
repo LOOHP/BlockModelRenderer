@@ -1,3 +1,4 @@
+[![Build Status](https://ci.loohpjames.com/job/BlockModelRenderer/badge/icon)](https://ci.loohpjames.com/job/BlockModelRenderer/)
 # BlockModelRenderer
 Render Minecraft block models<br>
 Used in **[InteractiveChat-DiscordSRV-Addon](https://github.com/LOOHP/InteractiveChat-DiscordSRV-Addon)** to render item models to send to discord.
