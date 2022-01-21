@@ -5,6 +5,7 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.image.BufferedImage;
 
 import com.loohp.blockmodelrenderer.utils.DoubleBiFunction;
+import com.loohp.blockmodelrenderer.utils.DoubleBiPredicate;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 
 public class BakeResult {
@@ -13,9 +14,10 @@ public class BakeResult {
 	private AffineTransform transform;
 	private AffineTransform inverseTransform;
 	private DoubleBiFunction depthFunction;
+	private DoubleBiPredicate inBoundPredicate;
 	private boolean ignoreZFight;
 	
-	public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, boolean ignoreZFight) {
+	public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, DoubleBiPredicate inBoundPredicate, boolean ignoreZFight) {
 		this.texture = texture;
 		this.transform = transform;
 		try {
@@ -24,6 +26,7 @@ public class BakeResult {
 			this.inverseTransform = null;
 		}
 		this.depthFunction = depthFunction;
+		this.inBoundPredicate = inBoundPredicate;
 		this.ignoreZFight = ignoreZFight;
 	}
 
@@ -49,6 +52,10 @@ public class BakeResult {
 
 	public boolean ignoreZFight() {
 		return ignoreZFight;
+	}
+	
+	public boolean isWithinBound(double x, double y) {
+		return inBoundPredicate.test(x, y);
 	}
 
 }

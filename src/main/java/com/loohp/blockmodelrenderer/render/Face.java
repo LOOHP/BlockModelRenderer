@@ -164,6 +164,30 @@ public class Face implements ITransformable {
 		return Stream.of(points).mapToDouble(point -> point.z).average().getAsDouble();
 	}
 	
+	public double getMaxX() {
+		return Stream.of(points).mapToDouble(point -> point.x).max().getAsDouble();
+	}
+	
+	public double getMaxY() {
+		return Stream.of(points).mapToDouble(point -> point.y).max().getAsDouble();
+	}
+	
+	public double getMaxZ() {
+		return Stream.of(points).mapToDouble(point -> point.z).max().getAsDouble();
+	}
+	
+	public double getMinX() {
+		return Stream.of(points).mapToDouble(point -> point.x).min().getAsDouble();
+	}
+	
+	public double getMinY() {
+		return Stream.of(points).mapToDouble(point -> point.y).min().getAsDouble();
+	}
+	
+	public double getMinZ() {
+		return Stream.of(points).mapToDouble(point -> point.z).min().getAsDouble();
+	}
+	
 	public Point3D getCenterPoint() {
 		return new Point3D(getAverageX(), getAverageY(), getAverageZ());
 	}
@@ -307,7 +331,16 @@ public class Face implements ITransformable {
 			}
 			transform.concatenate(AffineTransform.getScaleInstance(scaleX, scaleY));
 			
-			return new BakeResult(image, transform, (x, y) -> getDepthAt((x - baseTransform.getTranslateX()) / baseTransform.getScaleX(), -(y - baseTransform.getTranslateY()) / baseTransform.getScaleY()), ignoreZFight);
+			double maxX = getMaxX();
+			double maxY = getMaxY();
+			double minX = getMinX();
+			double minY = getMinY();
+			
+			return new BakeResult(image, transform, (x, y) -> {
+				return getDepthAt(x, y);
+			}, (x, y) -> {
+				return MathUtils.greaterThanOrEquals(x, minX) && MathUtils.greaterThanOrEquals(y, minY) && MathUtils.lessThanOrEquals(x, maxX) && MathUtils.lessThanOrEquals(y, maxY);
+			}, ignoreZFight);
 		}
 	}
 

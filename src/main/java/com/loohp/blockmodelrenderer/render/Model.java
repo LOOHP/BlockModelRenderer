@@ -92,6 +92,10 @@ public class Model implements ITransformable {
 		}
 		int w = source.getWidth();
 		int h = source.getHeight();
+		double baseTranslateX = baseTransform.getTranslateX();
+		double baseTranslateY = baseTransform.getTranslateY();
+		double baseScaleX = baseTransform.getScaleX();
+		double baseScaleY = -baseTransform.getScaleY();
 		int[] sourceColors = source.getRGB(0, 0, w, h, null, 0, w);
 		int pixelCount = w * h;
 		List<Future<?>> futures = new ArrayList<>((pixelCount / PIXEL_PER_THREAD) + 1);
@@ -108,35 +112,39 @@ public class Model implements ITransformable {
 					int sourceColor = sourceColors[position];
 					int x = position % w;
 					int y = position / w;
+					double reverseTransformedX = (x - baseTranslateX) / baseScaleX;
+					double reverseTransformedY = (y - baseTranslateY) / baseScaleY;
 					int newColor = sourceColor;
-					double z = -Double.MAX_VALUE;
+					double z = MathUtils.NEGATIVE_MAX_DOUBLE;
 					pointSrc[0] = x;
 					pointSrc[1] = y;
 					for (BakeResult bake : bakes) {
-						bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
-						BufferedImage image = bake.getTexture();
-						if (MathUtils.greaterThanOrEquals(pointDes[0], 0.0) && MathUtils.greaterThanOrEquals(pointDes[1], 0.0) && MathUtils.lessThan(pointDes[0], image.getWidth()) && MathUtils.lessThan(pointDes[1], image.getHeight())) {
-							int imageColor = image.getRGB((int) pointDes[0], (int) pointDes[1]);
-							if (useZBuffer && !bake.ignoreZFight()) {
-								int imageAlpha = ColorUtils.getAlpha(imageColor);
-								int sourceAlpha = ColorUtils.getAlpha(sourceColor);
-								if (imageAlpha > 0) {
-									double depth = bake.getDepthAt(x, y);
-									if (MathUtils.greaterThanOrEquals(depth, z)) {
-										if (depth > z) {
-											z = depth;
+						if (bake.isWithinBound(reverseTransformedX, reverseTransformedY)) {
+							bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
+							BufferedImage image = bake.getTexture();
+							if (MathUtils.greaterThanOrEquals(pointDes[0], 0.0) && MathUtils.greaterThanOrEquals(pointDes[1], 0.0) && MathUtils.lessThan(pointDes[0], image.getWidth()) && MathUtils.lessThan(pointDes[1], image.getHeight())) {
+								int imageColor = image.getRGB((int) pointDes[0], (int) pointDes[1]);
+								if (useZBuffer && !bake.ignoreZFight()) {
+									int imageAlpha = ColorUtils.getAlpha(imageColor);
+									int sourceAlpha = ColorUtils.getAlpha(sourceColor);
+									if (imageAlpha > 0) {
+										double depth = bake.getDepthAt(reverseTransformedX, reverseTransformedY);
+										if (MathUtils.greaterThanOrEquals(depth, z)) {
+											if (depth > z) {
+												z = depth;
+											}
+											if (imageAlpha >= 255) {
+												newColor = imageColor;
+											} else {
+												newColor = ColorUtils.composite(imageColor, newColor);
+											}
 										}
-										if (imageAlpha >= 255) {
-											newColor = imageColor;
-										} else {
-											newColor = ColorUtils.composite(imageColor, newColor);
-										}
+									} else if (sourceAlpha < 255) {
+										newColor = ColorUtils.composite(newColor, imageColor);
 									}
-								} else if (sourceAlpha < 255) {
-									newColor = ColorUtils.composite(newColor, imageColor);
+								} else {
+									newColor = ColorUtils.composite(imageColor, newColor);
 								}
-							} else {
-								newColor = ColorUtils.composite(imageColor, newColor);
 							}
 						}
 					}
