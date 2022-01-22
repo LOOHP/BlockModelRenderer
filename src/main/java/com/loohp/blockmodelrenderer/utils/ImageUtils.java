@@ -76,7 +76,7 @@ public class ImageUtils {
 	    BufferedImage rotated = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
 	    Graphics2D g = rotated.createGraphics();
 	    AffineTransform at = new AffineTransform();
-	    at.translate((newWidth - w) / 2, (newHeight - h) / 2);
+	    at.translate((newWidth - w) / 2.0, (newHeight - h) / 2.0);
 
 	    int x = w / 2;
 	    int y = h / 2;
@@ -140,7 +140,7 @@ public class ImageUtils {
 					int red = color.getRed() + (int) (addColor.getRed() * factor);
 					int green = color.getGreen() + (int) (addColor.getGreen() * factor);
 					int blue = color.getBlue() + (int) (addColor.getBlue() * factor);
-					color = new Color(red > 255 ? 255 : red, green > 255 ? 255 : green, blue > 255 ? 255 : blue, color.getAlpha());
+					color = new Color(Math.min(red, 255), Math.min(green, 255), Math.min(blue, 255), color.getAlpha());
 					image.setRGB(x, y, color.getRGB());
 				}
 			}
@@ -177,7 +177,7 @@ public class ImageUtils {
 					int red = color.getRed() - value;
 					int green = color.getGreen() - value;
 					int blue = color.getBlue() - value;
-					color = new Color(red < 0 ? 0 : red, green < 0 ? 0 : green, blue < 0 ? 0 : blue, color.getAlpha());
+					color = new Color(Math.max(red, 0), Math.max(green, 0), Math.max(blue, 0), color.getAlpha());
 					image.setRGB(x, y, color.getRGB());
 				}
 			}
@@ -199,7 +199,7 @@ public class ImageUtils {
 					int red = color.getRed() + xValue;
 					int green = color.getGreen() + yValue;
 					int blue = color.getBlue() + zValue;
-					color = new Color(red < 0 ? 0 : (red > 255 ? 255 : red), green < 0 ? 0 : (green > 255 ? 255 : green), blue < 0 ? 0 : (blue > 255 ? 255 : blue), color.getAlpha());
+					color = new Color(red < 0 ? 0 : (Math.min(red, 255)), green < 0 ? 0 : (Math.min(green, 255)), blue < 0 ? 0 : (Math.min(blue, 255)), color.getAlpha());
 					image.setRGB(x, y, color.getRGB());
 				}
 			}
@@ -221,7 +221,7 @@ public class ImageUtils {
 					int red = (int) (color.getRed() * xValue);
 					int green = (int) (color.getGreen() * yValue);
 					int blue = (int) (color.getBlue() * zValue);
-					color = new Color(red < 0 ? 0 : (red > 255 ? 255 : red), green < 0 ? 0 : (green > 255 ? 255 : green), blue < 0 ? 0 : (blue > 255 ? 255 : blue), color.getAlpha());
+					color = new Color(red < 0 ? 0 : (Math.min(red, 255)), green < 0 ? 0 : (Math.min(green, 255)), blue < 0 ? 0 : (Math.min(blue, 255)), color.getAlpha());
 					image.setRGB(x, y, color.getRGB());
 				}
 			}
@@ -269,7 +269,7 @@ public class ImageUtils {
 				Color color = new Color(colorValue, true);
 				
 				int alpha = color.getAlpha() + value;
-				color = new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha > 255 ? 255 : (alpha < 0 ? 0 : alpha));
+				color = new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha > 255 ? 255 : (Math.max(alpha, 0)));
 				image.setRGB(x, y, color.getRGB());
 			}
 		}

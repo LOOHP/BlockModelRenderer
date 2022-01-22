@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class TaskCompletation {
+public class TaskCompletion {
 	
 	private List<Future<?>> futures;
 	
-	public TaskCompletation(List<Future<?>> futures) {
+	public TaskCompletion(List<Future<?>> futures) {
 		this.futures = futures;
 	}
 	
