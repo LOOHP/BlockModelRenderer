@@ -7,13 +7,23 @@ import java.util.List;
 
 public class Hexahedron implements ITransformable {
 
+    public static Hexahedron fromCorners(Point3D p1, Point3D p2, boolean ignoreZFight, BufferedImage[] images) {
+        if (images.length != 6) {
+            throw new IllegalArgumentException("images length must be 6");
+        }
+        return new Hexahedron(new Face(images[0], ignoreZFight, new Point3D(p1.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p1.x, p2.y, p2.z)),
+                              new Face(images[1], ignoreZFight, new Point3D(p1.x, p1.y, p1.z), new Point3D(p1.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p1.z)),
+                              new Face(images[2], ignoreZFight, new Point3D(p2.x, p2.y, p1.z), new Point3D(p1.x, p2.y, p1.z), new Point3D(p1.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p1.z)),
+                              new Face(images[3], ignoreZFight, new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p2.z)),
+                              new Face(images[4], ignoreZFight, new Point3D(p1.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p2.z)),
+                              new Face(images[5], ignoreZFight, new Point3D(p1.x, p2.y, p1.z), new Point3D(p1.x, p2.y, p2.z), new Point3D(p1.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p1.z)));
+    }
     private Face upFace;
     private Face downFace;
     private Face northFace;
     private Face eastFace;
     private Face southFace;
     private Face westFace;
-
     private List<Face> ordered;
 
     public Hexahedron(Face upFace, Face downFace, Face northFace, Face eastFace, Face southFace, Face westFace) {
@@ -40,18 +50,6 @@ public class Hexahedron implements ITransformable {
 
         ordered = new ArrayList<>(Arrays.asList(upFace, downFace, northFace, eastFace, southFace, westFace));
         sortFaces();
-    }
-
-    public static Hexahedron fromCorners(Point3D p1, Point3D p2, boolean ignoreZFight, BufferedImage[] images) {
-        if (images.length != 6) {
-            throw new IllegalArgumentException("images length must be 6");
-        }
-        return new Hexahedron(new Face(images[0], ignoreZFight, new Point3D(p1.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p1.x, p2.y, p2.z)),
-                              new Face(images[1], ignoreZFight, new Point3D(p1.x, p1.y, p1.z), new Point3D(p1.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p1.z)),
-                              new Face(images[2], ignoreZFight, new Point3D(p2.x, p2.y, p1.z), new Point3D(p1.x, p2.y, p1.z), new Point3D(p1.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p1.z)),
-                              new Face(images[3], ignoreZFight, new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p2.z)),
-                              new Face(images[4], ignoreZFight, new Point3D(p1.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p2.z)),
-                              new Face(images[5], ignoreZFight, new Point3D(p1.x, p2.y, p1.z), new Point3D(p1.x, p2.y, p2.z), new Point3D(p1.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p1.z)));
     }
 
     @Override

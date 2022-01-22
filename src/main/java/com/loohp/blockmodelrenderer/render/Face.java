@@ -42,7 +42,7 @@ public class Face implements ITransformable {
         this.axis = new Vector[points.length][];
         for (int i = 0; i < points.length; i++) {
             this.points[i] = points[i].clone();
-            this.axis[i] = new Vector[]{new Vector(1, 0, 0), new Vector(0, 1, 0), new Vector(0, 0, 1)};
+            this.axis[i] = new Vector[] {new Vector(1, 0, 0), new Vector(0, 1, 0), new Vector(0, 0, 1)};
         }
     }
 

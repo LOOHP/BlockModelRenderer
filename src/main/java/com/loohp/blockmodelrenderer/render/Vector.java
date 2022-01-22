@@ -4,6 +4,9 @@ public class Vector implements Cloneable {
 
     private static final double EPSILON = 0.000001;
 
+    public static double getEpsilon() {
+        return EPSILON;
+    }
     private double x;
     private double y;
     private double z;
@@ -24,10 +27,6 @@ public class Vector implements Cloneable {
         this.x = p2.x - p1.x;
         this.y = p2.y - p1.y;
         this.z = p2.z - p1.z;
-    }
-
-    public static double getEpsilon() {
-        return EPSILON;
     }
 
     public double getX() {
