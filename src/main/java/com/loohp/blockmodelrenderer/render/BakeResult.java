@@ -14,10 +14,10 @@ public class BakeResult {
     private AffineTransform transform;
     private AffineTransform inverseTransform;
     private DoubleBiFunction depthFunction;
-    private DoubleBiPredicate inBoundPredicate;
+    private DoubleBiPredicate outOfBoundPredicate;
     private boolean ignoreZFight;
 
-    public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, DoubleBiPredicate inBoundPredicate, boolean ignoreZFight) {
+    public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, DoubleBiPredicate outOfBoundPredicate, boolean ignoreZFight) {
         this.texture = texture;
         this.transform = transform;
         try {
@@ -26,7 +26,7 @@ public class BakeResult {
             this.inverseTransform = null;
         }
         this.depthFunction = depthFunction;
-        this.inBoundPredicate = inBoundPredicate;
+        this.outOfBoundPredicate = outOfBoundPredicate;
         this.ignoreZFight = ignoreZFight;
     }
 
@@ -54,8 +54,8 @@ public class BakeResult {
         return ignoreZFight;
     }
 
-    public boolean isWithinBound(double x, double y) {
-        return inBoundPredicate.test(x, y);
+    public boolean isOutOfBound(double x, double y) {
+        return outOfBoundPredicate.test(x, y);
     }
 
 }

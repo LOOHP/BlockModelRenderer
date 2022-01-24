@@ -193,6 +193,10 @@ public class Face implements ITransformable {
         return new Vector(getAverageX(), getAverageY(), getAverageZ());
     }
 
+    public double getLightRatio() {
+        return lightRatio;
+    }
+
     public void rotate(double x, double y, double z, boolean saveAxis) {
         x = Math.toRadians(x);
         y = Math.toRadians(y);
@@ -336,13 +340,9 @@ public class Face implements ITransformable {
             return new BakeResult(image, transform, (x, y) -> {
                 return getDepthAt(x, y);
             }, (x, y) -> {
-                return MathUtils.greaterThanOrEquals(x, minX) && MathUtils.greaterThanOrEquals(y, minY) && MathUtils.lessThanOrEquals(x, maxX) && MathUtils.lessThanOrEquals(y, maxY);
+                return !MathUtils.greaterThanOrEquals(x, minX) || !MathUtils.greaterThanOrEquals(y, minY) || !MathUtils.lessThanOrEquals(x, maxX) || !MathUtils.lessThanOrEquals(y, maxY);
             }, ignoreZFight);
         }
-    }
-
-    public double getLightRatio() {
-        return lightRatio;
     }
 
 }

@@ -118,33 +118,35 @@ public class Model implements ITransformable {
                     pointSrc[0] = x;
                     pointSrc[1] = y;
                     for (BakeResult bake : bakes) {
-                        if (bake.isWithinBound(reverseTransformedX, reverseTransformedY)) {
-                            bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
-                            BufferedImage image = bake.getTexture();
-                            if (MathUtils.greaterThanOrEquals(pointDes[0], 0.0) && MathUtils.greaterThanOrEquals(pointDes[1], 0.0) && MathUtils.lessThan(pointDes[0], image.getWidth()) && MathUtils.lessThan(pointDes[1], image.getHeight())) {
-                                int imageColor = image.getRGB((int) pointDes[0], (int) pointDes[1]);
-                                if (useZBuffer && !bake.ignoreZFight()) {
-                                    int imageAlpha = ColorUtils.getAlpha(imageColor);
-                                    int sourceAlpha = ColorUtils.getAlpha(sourceColor);
-                                    if (imageAlpha > 0) {
-                                        double depth = bake.getDepthAt(reverseTransformedX, reverseTransformedY);
-                                        if (MathUtils.greaterThanOrEquals(depth, z)) {
-                                            if (depth > z) {
-                                                z = depth;
-                                            }
-                                            if (imageAlpha >= 255) {
-                                                newColor = imageColor;
-                                            } else {
-                                                newColor = ColorUtils.composite(imageColor, newColor);
-                                            }
-                                        }
-                                    } else if (sourceAlpha < 255) {
-                                        newColor = ColorUtils.composite(newColor, imageColor);
+                        if (bake.isOutOfBound(reverseTransformedX, reverseTransformedY)) {
+                            continue;
+                        }
+                        bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
+                        BufferedImage image = bake.getTexture();
+                        if (!MathUtils.greaterThanOrEquals(pointDes[0], 0.0) || !MathUtils.greaterThanOrEquals(pointDes[1], 0.0) || !MathUtils.lessThan(pointDes[0], image.getWidth()) || !MathUtils.lessThan(pointDes[1], image.getHeight())) {
+                            continue;
+                        }
+                        int imageColor = image.getRGB((int) pointDes[0], (int) pointDes[1]);
+                        if (useZBuffer && !bake.ignoreZFight()) {
+                            int imageAlpha = ColorUtils.getAlpha(imageColor);
+                            int sourceAlpha = ColorUtils.getAlpha(sourceColor);
+                            if (imageAlpha > 0) {
+                                double depth = bake.getDepthAt(reverseTransformedX, reverseTransformedY);
+                                if (MathUtils.greaterThanOrEquals(depth, z)) {
+                                    if (depth > z) {
+                                        z = depth;
                                     }
-                                } else {
-                                    newColor = ColorUtils.composite(imageColor, newColor);
+                                    if (imageAlpha >= 255) {
+                                        newColor = imageColor;
+                                    } else {
+                                        newColor = ColorUtils.composite(imageColor, newColor);
+                                    }
                                 }
+                            } else if (sourceAlpha < 255) {
+                                newColor = ColorUtils.composite(newColor, imageColor);
                             }
+                        } else {
+                            newColor = ColorUtils.composite(imageColor, newColor);
                         }
                     }
                     if (newColor != sourceColor) {
