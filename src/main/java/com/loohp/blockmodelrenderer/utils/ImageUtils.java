@@ -13,10 +13,25 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
+import static com.loohp.blockmodelrenderer.utils.ColorUtils.getAlpha;
+import static com.loohp.blockmodelrenderer.utils.ColorUtils.getBlue;
+import static com.loohp.blockmodelrenderer.utils.ColorUtils.getGreen;
+import static com.loohp.blockmodelrenderer.utils.ColorUtils.getIntFromColor;
+import static com.loohp.blockmodelrenderer.utils.ColorUtils.getRed;
+
 public class ImageUtils {
 
     public static final Color TEXT_BACKGROUND_COLOR = new Color(0, 0, 0, 180);
     public static final double CHAT_COLOR_BACKGROUND_FACTOR = 0.19;
+
+    public static String hash(BufferedImage image) {
+        StringBuilder sb = new StringBuilder();
+        int[] colors = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
+        for (int color : colors) {
+            sb.append(Integer.toHexString(color));
+        }
+        return sb.toString();
+    }
 
     public static BufferedImage toCompatibleImage(BufferedImage image) {
         try {
@@ -46,6 +61,13 @@ public class ImageUtils {
         return image.getRGB(x, y);
     }
 
+    public static int getRGB(int[] colors, int x, int y, int w, int h) {
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+            return 0;
+        }
+        return colors[y * w + x];
+    }
+
     public static BufferedImage downloadImage(String link) throws IOException {
         URL url = new URL(link);
         URLConnection connection = url.openConnection();
@@ -60,8 +82,19 @@ public class ImageUtils {
         return image;
     }
 
+    public static BufferedImage transformRGB(BufferedImage image, IntToIntFunction function) {
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int colorValue = image.getRGB(x, y);
+                int newValue = function.apply(colorValue);
+                image.setRGB(x, y, newValue);
+            }
+        }
+        return image;
+    }
+
     public static BufferedImage rotateImageByDegrees(BufferedImage img, double angle) {
-        if (angle % 360 == 0) {
+        if (MathUtils.equals(angle % 360, 0)) {
             return img;
         }
         double rads = Math.toRadians(angle);
@@ -131,16 +164,14 @@ public class ImageUtils {
         for (int y = 0; y < image.getHeight() && y < imageToAdd.getHeight(); y++) {
             for (int x = 0; x < image.getWidth() && x < imageToAdd.getWidth(); x++) {
                 int value = image.getRGB(x, y);
-                Color color = new Color(value, true);
-
                 int addValue = imageToAdd.getRGB(x, y);
-                Color addColor = new Color(addValue, true);
-                if (color.getAlpha() != 0) {
-                    int red = color.getRed() + (int) (addColor.getRed() * factor);
-                    int green = color.getGreen() + (int) (addColor.getGreen() * factor);
-                    int blue = color.getBlue() + (int) (addColor.getBlue() * factor);
-                    color = new Color(Math.min(red, 255), Math.min(green, 255), Math.min(blue, 255), color.getAlpha());
-                    image.setRGB(x, y, color.getRGB());
+                int alpha = getAlpha(value);
+                if (alpha != 0) {
+                    int red = getRed(value) + (int) (getRed(addValue) * factor);
+                    int green = getGreen(value) + (int) (getGreen(addValue) * factor);
+                    int blue = getBlue(value) + (int) (getBlue(addValue) * factor);
+                    int color = getIntFromColor(Math.min(red, 255), Math.min(green, 255), Math.min(blue, 255), alpha);
+                    image.setRGB(x, y, color);
                 }
             }
         }
@@ -152,13 +183,9 @@ public class ImageUtils {
             for (int x = 0; x + posX < image.getWidth() && x < imageToAdd.getWidth(); x++) {
                 if (x + posX >= 0 && y + posY >= 0) {
                     int value = image.getRGB(x + posX, y + posY);
-                    Color color = new Color(value, true);
-
                     int addValue = imageToAdd.getRGB(x, y);
-                    Color addColor = new Color(addValue, true);
-                    if (color.getAlpha() == 0) {
-                        color = new Color(addColor.getRed(), addColor.getGreen(), addColor.getBlue(), addColor.getAlpha());
-                        image.setRGB(x + posX, y + posY, color.getRGB());
+                    if (getAlpha(value) == 0) {
+                        image.setRGB(x + posX, y + posY, addValue);
                     }
                 }
             }
@@ -170,14 +197,13 @@ public class ImageUtils {
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int colorValue = image.getRGB(x, y);
-                Color color = new Color(colorValue, true);
-
-                if (color.getAlpha() != 0) {
-                    int red = color.getRed() - value;
-                    int green = color.getGreen() - value;
-                    int blue = color.getBlue() - value;
-                    color = new Color(Math.max(red, 0), Math.max(green, 0), Math.max(blue, 0), color.getAlpha());
-                    image.setRGB(x, y, color.getRGB());
+                int alpha = getAlpha(colorValue);
+                if (alpha != 0) {
+                    int red = getRed(colorValue) - value;
+                    int green = getGreen(colorValue) - value;
+                    int blue = getBlue(colorValue) - value;
+                    int color = getIntFromColor(Math.max(red, 0), Math.max(green, 0), Math.max(blue, 0), alpha);
+                    image.setRGB(x, y, color);
                 }
             }
         }
@@ -192,14 +218,13 @@ public class ImageUtils {
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int colorValue = image.getRGB(x, y);
-                Color color = new Color(colorValue, true);
-
-                if (color.getAlpha() != 0) {
-                    int red = color.getRed() + xValue;
-                    int green = color.getGreen() + yValue;
-                    int blue = color.getBlue() + zValue;
-                    color = new Color(red < 0 ? 0 : (Math.min(red, 255)), green < 0 ? 0 : (Math.min(green, 255)), blue < 0 ? 0 : (Math.min(blue, 255)), color.getAlpha());
-                    image.setRGB(x, y, color.getRGB());
+                int alpha = getAlpha(colorValue);
+                if (alpha != 0) {
+                    int red = getRed(colorValue) + xValue;
+                    int green = getGreen(colorValue) + yValue;
+                    int blue = getBlue(colorValue) + zValue;
+                    int color = getIntFromColor(red < 0 ? 0 : (Math.min(red, 255)), green < 0 ? 0 : (Math.min(green, 255)), blue < 0 ? 0 : (Math.min(blue, 255)), alpha);
+                    image.setRGB(x, y, color);
                 }
             }
         }
@@ -214,14 +239,13 @@ public class ImageUtils {
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int colorValue = image.getRGB(x, y);
-                Color color = new Color(colorValue, true);
-
-                if (color.getAlpha() != 0) {
-                    int red = (int) (color.getRed() * xValue);
-                    int green = (int) (color.getGreen() * yValue);
-                    int blue = (int) (color.getBlue() * zValue);
-                    color = new Color(red < 0 ? 0 : (Math.min(red, 255)), green < 0 ? 0 : (Math.min(green, 255)), blue < 0 ? 0 : (Math.min(blue, 255)), color.getAlpha());
-                    image.setRGB(x, y, color.getRGB());
+                int alpha = getAlpha(colorValue);
+                if (alpha != 0) {
+                    int red = (int) (getRed(colorValue) * xValue);
+                    int green = (int) (getGreen(colorValue) * yValue);
+                    int blue = (int) (getBlue(colorValue) * zValue);
+                    int color = getIntFromColor(red < 0 ? 0 : (Math.min(red, 255)), green < 0 ? 0 : (Math.min(green, 255)), blue < 0 ? 0 : (Math.min(blue, 255)), alpha);
+                    image.setRGB(x, y, color);
                 }
             }
         }
@@ -232,16 +256,13 @@ public class ImageUtils {
         for (int y = 0; y < image.getHeight() && y < imageOnTop.getHeight(); y++) {
             for (int x = 0; x < image.getWidth() && x < imageOnTop.getWidth(); x++) {
                 int value = image.getRGB(x, y);
-                Color color = new Color(value, true);
-
                 int multiplyValue = imageOnTop.getRGB(x, y);
-                Color multiplyColor = new Color(multiplyValue, true);
 
-                int red = (int) Math.round((double) color.getRed() / 255 * (double) multiplyColor.getRed());
-                int green = (int) Math.round((double) color.getGreen() / 255 * (double) multiplyColor.getGreen());
-                int blue = (int) Math.round((double) color.getBlue() / 255 * (double) multiplyColor.getBlue());
-                color = new Color(red, green, blue, color.getAlpha());
-                image.setRGB(x, y, color.getRGB());
+                int red = (int) Math.round((double) getRed(value) / 255 * (double) getRed(multiplyValue));
+                int green = (int) Math.round((double) getGreen(value) / 255 * (double) getGreen(multiplyValue));
+                int blue = (int) Math.round((double) getBlue(value) / 255 * (double) getBlue(multiplyValue));
+                int color = getIntFromColor(red, green, blue, getAlpha(value));
+                image.setRGB(x, y, color);
             }
         }
 
@@ -249,13 +270,16 @@ public class ImageUtils {
     }
 
     public static BufferedImage changeColorTo(BufferedImage image, Color color) {
+        return changeColorTo(image, color.getRGB());
+    }
+
+    public static BufferedImage changeColorTo(BufferedImage image, int color) {
+        color = color & 0x00FFFFFF;
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int colorValue = image.getRGB(x, y);
-                Color oriColor = new Color(colorValue, true);
-
-                Color newColor = new Color(color.getRed(), color.getGreen(), color.getBlue(), oriColor.getAlpha());
-                image.setRGB(x, y, newColor.getRGB());
+                int newColor = color | (colorValue & 0xFF000000);
+                image.setRGB(x, y, newColor);
             }
         }
         return image;
@@ -265,11 +289,9 @@ public class ImageUtils {
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int colorValue = image.getRGB(x, y);
-                Color color = new Color(colorValue, true);
-
-                int alpha = color.getAlpha() + value;
-                color = new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha > 255 ? 255 : (Math.max(alpha, 0)));
-                image.setRGB(x, y, color.getRGB());
+                int alpha = getAlpha(colorValue) + value;
+                int color = getIntFromColor(getRed(colorValue), getGreen(colorValue), getBlue(colorValue), alpha > 255 ? 255 : (Math.max(alpha, 0)));
+                image.setRGB(x, y, color);
             }
         }
         return image;
@@ -298,13 +320,9 @@ public class ImageUtils {
         for (int y = 0; y < bottom.getHeight(); y++) {
             for (int x = 0; x < bottom.getWidth(); x++) {
                 int bottomValue = bottom.getRGB(x, y);
-                Color bottomColor = new Color(bottomValue, true);
-
                 int topValue = top.getRGB(x, y);
-                Color topColor = new Color(topValue, true);
-
-                Color color = new Color(bottomColor.getRed() ^ topColor.getRed(), bottomColor.getGreen() ^ topColor.getGreen(), bottomColor.getBlue() ^ topColor.getBlue(), bottomColor.getAlpha() ^ (topColor.getAlpha() * alpha / 255));
-                bottom.setRGB(x, y, color.getRGB());
+                int color = getIntFromColor(getRed(bottomValue) ^ getRed(topValue), getGreen(bottomValue) ^ getGreen(topValue), getBlue(bottomValue) ^ getBlue(topValue), getAlpha(bottomValue) ^ (getAlpha(topValue) * alpha / 255));
+                bottom.setRGB(x, y, color);
             }
         }
         return bottom;
@@ -328,10 +346,9 @@ public class ImageUtils {
     }
 
     public static BufferedImage copyAndGetSubImage(BufferedImage source, int x, int y, int w, int h) {
-        BufferedImage img = source.getSubimage(x, y, w, h); //fill in the corners of the desired crop location here
-        BufferedImage copyOfImage = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage copyOfImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = copyOfImage.createGraphics();
-        g.drawImage(img, 0, 0, null);
+        g.drawImage(source, -x, -y, null);
         g.dispose();
         return copyOfImage;
     }
@@ -339,12 +356,6 @@ public class ImageUtils {
     public static BufferedImage resizeImage(BufferedImage source, double factor) {
         int w = (int) (source.getWidth() * factor);
         int h = (int) (source.getHeight() * factor);
-        return resizeImageAbs(source, w, h);
-    }
-
-    public static BufferedImage resizeImage(BufferedImage source, double factorX, double factorY) {
-        int w = (int) (source.getWidth() * factorX);
-        int h = (int) (source.getHeight() * factorY);
         return resizeImageAbs(source, w, h);
     }
 
