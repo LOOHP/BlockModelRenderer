@@ -55,7 +55,7 @@ public class Face implements ITransformable {
         this.oppositeFace = null;
         this.priority = 1;
         this.ignoreZFight = ignoreZFight;
-        this.image = image == null ? null : ImageUtils.copyImage(image);
+        this.image = image;
         this.overlay = null;
         this.overlayAdditionFactor = 1;
         this.points = new Point3D[points.length];
