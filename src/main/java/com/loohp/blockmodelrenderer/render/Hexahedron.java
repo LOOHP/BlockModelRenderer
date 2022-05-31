@@ -20,6 +20,8 @@
 
 package com.loohp.blockmodelrenderer.render;
 
+import com.loohp.blockmodelrenderer.blending.BlendingModes;
+
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -156,7 +158,7 @@ public class Hexahedron implements ITransformable {
         westFace.image = images[5];
     }
 
-    public void setOverlay(BufferedImage[] images) {
+    public void setOverlay(BufferedImage[][] images) {
         if (images.length != 6) {
             throw new IllegalArgumentException("images length must be 6");
         }
@@ -166,6 +168,18 @@ public class Hexahedron implements ITransformable {
         eastFace.overlay = images[3];
         southFace.overlay = images[4];
         westFace.overlay = images[5];
+    }
+
+    public void setOverlayBlendingMode(BlendingModes[][] blendingModes) {
+        if (blendingModes.length != 6) {
+            throw new IllegalArgumentException("blendingModes length must be 6");
+        }
+        upFace.overlayBlendingMode = blendingModes[0];
+        downFace.overlayBlendingMode = blendingModes[1];
+        northFace.overlayBlendingMode = blendingModes[2];
+        eastFace.overlayBlendingMode = blendingModes[3];
+        southFace.overlayBlendingMode = blendingModes[4];
+        westFace.overlayBlendingMode = blendingModes[5];
     }
 
     public void setOverlayAdditionFactor(double[] factors) {

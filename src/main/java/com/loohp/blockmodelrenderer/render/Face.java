@@ -20,6 +20,8 @@
 
 package com.loohp.blockmodelrenderer.render;
 
+import com.loohp.blockmodelrenderer.blending.BlendingModes;
+import com.loohp.blockmodelrenderer.utils.ColorUtils;
 import com.loohp.blockmodelrenderer.utils.ImageUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 import com.loohp.blockmodelrenderer.utils.PlaneUtils;
@@ -38,7 +40,8 @@ public class Face implements ITransformable {
     public static final Comparator<Face> AVERAGE_DEPTH_COMPARATOR = Comparator.comparing(face -> face.getAverageZ());
 
     protected BufferedImage image;
-    protected BufferedImage overlay;
+    protected BufferedImage[] overlay;
+    protected BlendingModes[] overlayBlendingMode;
     protected double overlayAdditionFactor;
     protected Face oppositeFace;
     protected byte priority;
@@ -57,6 +60,7 @@ public class Face implements ITransformable {
         this.ignoreZFight = ignoreZFight;
         this.image = image;
         this.overlay = null;
+        this.overlayBlendingMode = null;
         this.overlayAdditionFactor = 1;
         this.points = new Point3D[points.length];
         this.axis = new Vector[points.length][];
@@ -116,12 +120,20 @@ public class Face implements ITransformable {
         this.image = image;
     }
 
-    public BufferedImage getOverlay() {
+    public BufferedImage[] getOverlay() {
         return overlay;
     }
 
-    public void setOverlay(BufferedImage overlay) {
+    public void setOverlay(BufferedImage[] overlay) {
         this.overlay = overlay;
+    }
+
+    public BlendingModes[] getOverlayBlendingMode() {
+        return overlayBlendingMode;
+    }
+
+    public void setOverlayBlendingMode(BlendingModes[] overlayBlendingMode) {
+        this.overlayBlendingMode = overlayBlendingMode;
     }
 
     public Face getOppositeFace() {
@@ -305,7 +317,13 @@ public class Face implements ITransformable {
 
             BufferedImage image = ImageUtils.multiply(ImageUtils.copyImage(this.image), lightRatio);
             if (overlay != null) {
-                image = ImageUtils.additionNonTransparent(image, overlay, overlayAdditionFactor);
+                for (int i = 0; i < overlay.length; i++) {
+                    BufferedImage overlayLayer = overlay[i];
+                    BlendingModes blendingModes = overlayBlendingMode == null || i >= overlayBlendingMode.length || overlayBlendingMode[i] == null ? BlendingModes.GLINT : overlayBlendingMode[i];
+                    image = ImageUtils.transformRGB(image, (x, y, colorValue) -> {
+                        return ColorUtils.composite(overlayLayer.getRGB(x, y), colorValue, blendingModes);
+                    });
+                }
             }
 
             double w = 0;

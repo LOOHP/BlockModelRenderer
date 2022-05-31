@@ -28,6 +28,8 @@ import java.awt.GraphicsEnvironment;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferInt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -102,15 +104,35 @@ public class ImageUtils {
         return image;
     }
 
-    public static BufferedImage transformRGB(BufferedImage image, IntToIntFunction function) {
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                int colorValue = image.getRGB(x, y);
-                int newValue = function.apply(colorValue);
-                image.setRGB(x, y, newValue);
-            }
+    public static BufferedImage transformRGB(BufferedImage image, PixelTransformFunction function) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int[] colors;
+        boolean direct;
+        DataBuffer dataBuffer = image.getRaster().getDataBuffer();
+        if (dataBuffer instanceof DataBufferInt) {
+            colors = ((DataBufferInt) dataBuffer).getData();
+            direct = true;
+        } else {
+            colors = image.getRGB(0, 0, width, height, null, 0, width);
+            direct = false;
+        }
+        int i = 0;
+        for (int colorValue : colors) {
+            colors[i] = function.apply(i % width, i / width, colorValue);
+            i++;
+        }
+        if (!direct) {
+            image.setRGB(0, 0, width, height, colors, 0, width);
         }
         return image;
+    }
+
+    @FunctionalInterface
+    public interface PixelTransformFunction {
+
+        int apply(int x, int y, int colorValue);
+
     }
 
     public static BufferedImage rotateImageByDegrees(BufferedImage img, double angle) {

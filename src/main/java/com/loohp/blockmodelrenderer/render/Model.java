@@ -20,6 +20,7 @@
 
 package com.loohp.blockmodelrenderer.render;
 
+import com.loohp.blockmodelrenderer.blending.BlendingModes;
 import com.loohp.blockmodelrenderer.utils.ColorUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 import com.loohp.blockmodelrenderer.utils.TaskCompletion;
@@ -101,7 +102,7 @@ public class Model implements ITransformable {
         faces.sort(Face.AVERAGE_DEPTH_COMPARATOR);
     }
 
-    public TaskCompletion render(BufferedImage source, boolean useZBuffer, AffineTransform baseTransform, ExecutorService service) {
+    public TaskCompletion render(BufferedImage source, boolean useZBuffer, AffineTransform baseTransform, BlendingModes blendingMode, ExecutorService service) {
         List<BakeResult> bakes = new LinkedList<>();
         for (Face face : faces) {
             BakeResult result = face.bake(baseTransform);
@@ -159,14 +160,14 @@ public class Model implements ITransformable {
                                     if (imageAlpha >= 255) {
                                         newColor = imageColor;
                                     } else {
-                                        newColor = ColorUtils.composite(imageColor, newColor);
+                                        newColor = ColorUtils.composite(imageColor, newColor, blendingMode);
                                     }
                                 }
                             } else if (sourceAlpha < 255) {
-                                newColor = ColorUtils.composite(newColor, imageColor);
+                                newColor = ColorUtils.composite(newColor, imageColor, blendingMode);
                             }
                         } else {
-                            newColor = ColorUtils.composite(imageColor, newColor);
+                            newColor = ColorUtils.composite(imageColor, newColor, blendingMode);
                         }
                     }
                     if (newColor != sourceColor) {
