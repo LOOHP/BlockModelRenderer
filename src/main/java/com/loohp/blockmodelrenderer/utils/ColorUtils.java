@@ -45,9 +45,6 @@ public class ColorUtils {
     }
 
     public static int composite(int srcColor, int desColor, CompositeFactor srcFactor, CompositeFactor desFactor, CompositeFactor srcAlphaFactor, CompositeFactor desAlphaFactor) {
-        int srcAlpha = getAlpha(srcColor);
-        int desAlpha = getAlpha(desColor);
-
         int red = Math.min(255, (int) (getRed(srcColor) * srcFactor.getRed() + getRed(desColor) * desFactor.getRed()));
         int green = Math.min(255, (int) (getGreen(srcColor) * srcFactor.getGreen() + getGreen(desColor) * desFactor.getGreen()));
         int blue = Math.min(255, (int) (getBlue(srcColor) * srcFactor.getBlue() + getBlue(desColor) * desFactor.getBlue()));
