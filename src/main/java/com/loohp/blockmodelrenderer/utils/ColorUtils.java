@@ -21,7 +21,7 @@
 package com.loohp.blockmodelrenderer.utils;
 
 import com.loohp.blockmodelrenderer.blending.BlendingModes;
-import com.loohp.blockmodelrenderer.blending.CompositeFactor;
+import com.loohp.blockmodelrenderer.blending.ColorCompositeFactor;
 import com.loohp.blockmodelrenderer.blending.BlendingMode;
 
 public class ColorUtils {
@@ -31,24 +31,22 @@ public class ColorUtils {
     }
 
     public static int composite(int srcColor, int desColor, BlendingMode srcComposite, BlendingMode desComposite) {
-        CompositeFactor srcFactor = srcComposite.getCompositeFactor(srcColor, desColor);
-        CompositeFactor desFactor = desComposite.getCompositeFactor(srcColor, desColor);
-        return composite(srcColor, desColor, srcFactor, desFactor, srcFactor, desFactor);
+        return composite(srcColor, desColor, srcComposite, desComposite, srcComposite, desComposite);
     }
 
     public static int composite(int srcColor, int desColor, BlendingMode srcColorComposite, BlendingMode desColorComposite, BlendingMode srcAlphaComposite, BlendingMode desAlphaComposite) {
-        CompositeFactor srcFactor = srcColorComposite.getCompositeFactor(srcColor, desColor);
-        CompositeFactor desFactor = desColorComposite.getCompositeFactor(srcColor, desColor);
-        CompositeFactor srcAlphaFactor = srcAlphaComposite.getCompositeFactor(srcColor, desColor);
-        CompositeFactor desAlphaFactor = desAlphaComposite.getCompositeFactor(srcColor, desColor);
+        ColorCompositeFactor srcFactor = srcColorComposite.getColorCompositeFactor(srcColor, desColor);
+        ColorCompositeFactor desFactor = desColorComposite.getColorCompositeFactor(srcColor, desColor);
+        double srcAlphaFactor = srcAlphaComposite.getAlphaCompositeFactor(srcColor, desColor);
+        double desAlphaFactor = desAlphaComposite.getAlphaCompositeFactor(srcColor, desColor);
         return composite(srcColor, desColor, srcFactor, desFactor, srcAlphaFactor, desAlphaFactor);
     }
 
-    public static int composite(int srcColor, int desColor, CompositeFactor srcFactor, CompositeFactor desFactor, CompositeFactor srcAlphaFactor, CompositeFactor desAlphaFactor) {
+    public static int composite(int srcColor, int desColor, ColorCompositeFactor srcFactor, ColorCompositeFactor desFactor, double srcAlphaFactor, double desAlphaFactor) {
         int red = Math.min(255, (int) (getRed(srcColor) * srcFactor.getRed() + getRed(desColor) * desFactor.getRed()));
         int green = Math.min(255, (int) (getGreen(srcColor) * srcFactor.getGreen() + getGreen(desColor) * desFactor.getGreen()));
         int blue = Math.min(255, (int) (getBlue(srcColor) * srcFactor.getBlue() + getBlue(desColor) * desFactor.getBlue()));
-        int alpha = Math.min(255, (int) (getAlpha(srcColor) * srcAlphaFactor.getAlpha() + getAlpha(desColor) * desAlphaFactor.getAlpha()));
+        int alpha = Math.min(255, (int) (getAlpha(srcColor) * srcAlphaFactor + getAlpha(desColor) * desAlphaFactor));
 
         return getIntFromColor(red, green, blue, alpha);
     }

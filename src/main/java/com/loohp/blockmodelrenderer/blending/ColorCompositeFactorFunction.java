@@ -21,8 +21,8 @@
 package com.loohp.blockmodelrenderer.blending;
 
 @FunctionalInterface
-public interface CompositeFactorFunction {
+public interface ColorCompositeFactorFunction {
 
-    CompositeFactor apply(int src, int des);
+    ColorCompositeFactor apply(int src, int des);
 
 }

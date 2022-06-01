@@ -27,44 +27,60 @@ import static com.loohp.blockmodelrenderer.utils.ColorUtils.*;
 
 public enum BlendingMode {
 
-    ZERO((src, des) -> CompositeFactor.ZERO, 0),
+    ZERO((src, des) -> ColorCompositeFactor.ZERO, (src, des) -> 0.0, 0),
 
-    ONE((src, des) -> CompositeFactor.ONE, 1),
+    ONE((src, des) -> ColorCompositeFactor.ONE, (src, des) -> 1.0, 1),
 
     SRC_COLOR((src, des) -> {
-        return new CompositeFactor(getRed(src) / 255.0, getGreen(src) / 255.0, getBlue(src) / 255.0, getAlpha(src) / 255.0);
+        return new ColorCompositeFactor(getRed(src) / 255.0, getGreen(src) / 255.0, getBlue(src) / 255.0);
+    }, (src, des) -> {
+        return getAlpha(src) / 255.0;
     }, 768),
 
     ONE_MINUS_SRC_COLOR((src, des) -> {
-        return new CompositeFactor(1.0 - (getRed(src) / 255.0), 1.0 - (getGreen(src) / 255.0), 1.0 - (getBlue(src) / 255.0), 1.0 - (getAlpha(src) / 255.0));
+        return new ColorCompositeFactor(1.0 - (getRed(src) / 255.0), 1.0 - (getGreen(src) / 255.0), 1.0 - (getBlue(src) / 255.0));
+    }, (src, des) -> {
+        return 1.0 - (getAlpha(src) / 255.0);
     }, 769),
 
     DST_COLOR((src, des) -> {
-        return new CompositeFactor(getRed(des) / 255.0, getGreen(des) / 255.0, getBlue(des) / 255.0, getAlpha(des) / 255.0);
+        return new ColorCompositeFactor(getRed(des) / 255.0, getGreen(des) / 255.0, getBlue(des) / 255.0);
+    }, (src, des) -> {
+        return getAlpha(des) / 255.0;
     }, 774),
 
     ONE_MINUS_DST_COLOR((src, des) -> {
-        return new CompositeFactor(1.0 - (getRed(des) / 255.0), 1.0 - (getGreen(des) / 255.0), 1.0 - (getBlue(des) / 255.0), 1.0 - (getAlpha(des) / 255.0));
+        return new ColorCompositeFactor(1.0 - (getRed(des) / 255.0), 1.0 - (getGreen(des) / 255.0), 1.0 - (getBlue(des) / 255.0));
+    }, (src, des) -> {
+        return 1.0 - (getAlpha(des) / 255.0);
     }, 775),
 
     SRC_ALPHA((src, des) -> {
         double alpha = getAlpha(src) / 255.0;
-        return new CompositeFactor(alpha, alpha, alpha, alpha);
+        return new ColorCompositeFactor(alpha, alpha, alpha);
+    }, (src, des) -> {
+        return getAlpha(src) / 255.0;
     }, 770),
 
     ONE_MINUS_SRC_ALPHA((src, des) -> {
         double alpha = 1.0 - (getAlpha(src) / 255.0);
-        return new CompositeFactor(alpha, alpha, alpha, alpha);
+        return new ColorCompositeFactor(alpha, alpha, alpha);
+    }, (src, des) -> {
+        return 1.0 - (getAlpha(src) / 255.0);
     }, 771),
 
     DST_ALPHA((src, des) -> {
         double alpha = getAlpha(des) / 255.0;
-        return new CompositeFactor(alpha, alpha, alpha, alpha);
+        return new ColorCompositeFactor(alpha, alpha, alpha);
+    }, (src, des) -> {
+        return getAlpha(des) / 255.0;
     }, 772),
 
     ONE_MINUS_DST_ALPHA((src, des) -> {
         double alpha = 1.0 - (getAlpha(des) / 255.0);
-        return new CompositeFactor(alpha, alpha, alpha, alpha);
+        return new ColorCompositeFactor(alpha, alpha, alpha);
+    }, (src, des) -> {
+        return 1.0 - (getAlpha(des) / 255.0);
     }, 773);
 
     private static final BlendingMode[] VALUES = values();
@@ -78,18 +94,24 @@ public enum BlendingMode {
         }
     }
 
-    private final CompositeFactorFunction compositeFunction;
+    private final ColorCompositeFactorFunction colorCompositeFunction;
+    private final AlphaCompositeFactorFunction alphaCompositeFactorFunction;
     private final String name;
     private final int openGLValue;
 
-    BlendingMode(CompositeFactorFunction compositeFunction, int openGLValue) {
-        this.compositeFunction = compositeFunction;
+    BlendingMode(ColorCompositeFactorFunction colorCompositeFunction, AlphaCompositeFactorFunction alphaCompositeFactorFunction, int openGLValue) {
+        this.colorCompositeFunction = colorCompositeFunction;
+        this.alphaCompositeFactorFunction = alphaCompositeFactorFunction;
         this.openGLValue = openGLValue;
         this.name = "GL_" + name();
     }
 
-    public CompositeFactor getCompositeFactor(int src, int des) {
-        return compositeFunction.apply(src, des);
+    public ColorCompositeFactor getColorCompositeFactor(int src, int des) {
+        return colorCompositeFunction.apply(src, des);
+    }
+
+    public double getAlphaCompositeFactor(int src, int des) {
+        return alphaCompositeFactorFunction.apply(src, des);
     }
 
     public int getOpenGLValue() {

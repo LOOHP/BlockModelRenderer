@@ -20,21 +20,19 @@
 
 package com.loohp.blockmodelrenderer.blending;
 
-public class CompositeFactor {
+public class ColorCompositeFactor {
 
-    public static final CompositeFactor ZERO = new CompositeFactor(0.0, 0.0, 0.0, 0.0);
-    public static final CompositeFactor ONE = new CompositeFactor(1.0, 1.0, 1.0, 1.0);
+    public static final ColorCompositeFactor ZERO = new ColorCompositeFactor(0.0, 0.0, 0.0);
+    public static final ColorCompositeFactor ONE = new ColorCompositeFactor(1.0, 1.0, 1.0);
 
     private double red;
     private double green;
     private double blue;
-    private double alpha;
 
-    public CompositeFactor(double red, double green, double blue, double alpha) {
+    public ColorCompositeFactor(double red, double green, double blue) {
         this.red = red;
         this.green = green;
         this.blue = blue;
-        this.alpha = alpha;
     }
 
     public double getRed() {
@@ -49,17 +47,12 @@ public class CompositeFactor {
         return blue;
     }
 
-    public double getAlpha() {
-        return alpha;
-    }
-
     @Override
     public String toString() {
         return "CompositeFactor{" +
             "red=" + red +
             ", green=" + green +
             ", blue=" + blue +
-            ", alpha=" + alpha +
             '}';
     }
 
