@@ -25,9 +25,9 @@ public class ColorCompositeFactor {
     public static final ColorCompositeFactor ZERO = new ColorCompositeFactor(0.0, 0.0, 0.0);
     public static final ColorCompositeFactor ONE = new ColorCompositeFactor(1.0, 1.0, 1.0);
 
-    private double red;
-    private double green;
-    private double blue;
+    private final double red;
+    private final double green;
+    private final double blue;
 
     public ColorCompositeFactor(double red, double green, double blue) {
         this.red = red;
