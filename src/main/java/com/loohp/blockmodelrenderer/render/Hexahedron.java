@@ -35,7 +35,7 @@ public class Hexahedron implements ITransformable {
             throw new IllegalArgumentException("images length must be 6");
         }
         return new Hexahedron(new Face(images[0], new Point3D(p1.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p1.x, p2.y, p2.z)),
-                              new Face(images[1], new Point3D(p1.x, p1.y, p1.z), new Point3D(p1.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p1.z)),
+                              new Face(images[1], new Point3D(p1.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p2.x, p1.y, p1.z), new Point3D(p1.x, p1.y, p1.z)),
                               new Face(images[2], new Point3D(p2.x, p2.y, p1.z), new Point3D(p1.x, p2.y, p1.z), new Point3D(p1.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p1.z)),
                               new Face(images[3], new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p1.z), new Point3D(p2.x, p1.y, p1.z), new Point3D(p2.x, p1.y, p2.z)),
                               new Face(images[4], new Point3D(p1.x, p2.y, p2.z), new Point3D(p2.x, p2.y, p2.z), new Point3D(p2.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p2.z)),
