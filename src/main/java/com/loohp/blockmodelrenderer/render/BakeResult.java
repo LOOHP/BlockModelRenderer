@@ -30,21 +30,23 @@ import java.awt.image.BufferedImage;
 
 public class BakeResult {
 
-    private BufferedImage texture;
-    private AffineTransform transform;
-    private AffineTransform inverseTransform;
-    private DoubleBiFunction depthFunction;
-    private int depthTieBreaker;
-    private DoubleBiPredicate outOfBoundPredicate;
+    private final BufferedImage texture;
+    private final AffineTransform transform;
+    private final AffineTransform inverseTransform;
+    private final DoubleBiFunction depthFunction;
+    private final int depthTieBreaker;
+    private final DoubleBiPredicate outOfBoundPredicate;
 
-    public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, int depthTieBreaker, DoubleBiPredicate outOfBoundPredicate, boolean ignoreZFight) {
+    public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, int depthTieBreaker, DoubleBiPredicate outOfBoundPredicate) {
         this.texture = texture;
         this.transform = transform;
+        AffineTransform inverseTransform;
         try {
-            this.inverseTransform = MathUtils.equals(transform.getDeterminant(), 0.0) ? null : transform.createInverse();
+            inverseTransform = MathUtils.equals(transform.getDeterminant(), 0.0) ? null : transform.createInverse();
         } catch (NoninvertibleTransformException e) {
-            this.inverseTransform = null;
+            inverseTransform = null;
         }
+        this.inverseTransform = inverseTransform;
         this.depthFunction = depthFunction;
         this.depthTieBreaker = depthTieBreaker;
         this.outOfBoundPredicate = outOfBoundPredicate;

@@ -371,7 +371,7 @@ public class Face implements ITransformable {
                 return getDepthAt(x, y);
             }, priority, (x, y) -> {
                 return !MathUtils.greaterThanOrEquals(x, minX) || !MathUtils.greaterThanOrEquals(y, minY) || !MathUtils.lessThanOrEquals(x, maxX) || !MathUtils.lessThanOrEquals(y, maxY);
-            }, false);
+            });
         }
     }
 
