@@ -45,7 +45,7 @@ public class Model implements ITransformable {
         this.components = components;
         this.faces = new ArrayList<>();
         for (Hexahedron hexahedron : components) {
-            this.faces.addAll(hexahedron.getFaces());
+            this.faces.addAll(hexahedron.getFacesByAverageZ());
         }
         sortFaces();
     }
@@ -57,7 +57,7 @@ public class Model implements ITransformable {
     public void append(Model model) {
         for (Hexahedron hexahedron : model.components) {
             this.components.add(hexahedron);
-            this.faces.addAll(hexahedron.getFaces());
+            this.faces.addAll(hexahedron.getFacesByAverageZ());
         }
         sortFaces();
     }
@@ -136,6 +136,7 @@ public class Model implements ITransformable {
                     double reverseTransformedY = (y - baseTranslateY) / baseScaleY;
                     int newColor = sourceColor;
                     double z = MathUtils.NEGATIVE_MAX_DOUBLE;
+                    int depthTieBreaker = Integer.MIN_VALUE;
                     pointSrc[0] = x;
                     pointSrc[1] = y;
                     for (BakeResult bake : bakes) {
@@ -148,12 +149,14 @@ public class Model implements ITransformable {
                             continue;
                         }
                         int imageColor = image.getRGB((int) pointDes[0], (int) pointDes[1]);
-                        if (useZBuffer && !bake.ignoreZFight()) {
+                        if (useZBuffer) {
                             int imageAlpha = ColorUtils.getAlpha(imageColor);
                             int sourceAlpha = ColorUtils.getAlpha(sourceColor);
                             if (imageAlpha > 0) {
                                 double depth = bake.getDepthAt(reverseTransformedX, reverseTransformedY);
-                                if (MathUtils.greaterThanOrEquals(depth, z)) {
+                                int tieBreak = bake.getDepthTieBreaker();
+                                if (MathUtils.greaterThan(depth, z) || (MathUtils.equals(depth, z) && tieBreak > depthTieBreaker)) {
+                                    depthTieBreaker = tieBreak;
                                     if (depth > z) {
                                         z = depth;
                                     }

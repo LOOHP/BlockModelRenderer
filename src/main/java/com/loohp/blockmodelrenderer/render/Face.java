@@ -48,16 +48,16 @@ public class Face implements ITransformable {
     private double lightRatio;
     private Point3D[] points;
     private Vector[][] axis;
-    private boolean ignoreZFight;
+    private Face cullface;
 
-    public Face(BufferedImage image, boolean ignoreZFight, Point3D... points) {
+    public Face(BufferedImage image, Point3D... points) {
         if (points.length != 4) {
             throw new RuntimeException("points must have a length of 4.");
         }
         this.lightRatio = 1;
         this.oppositeFace = null;
         this.priority = 1;
-        this.ignoreZFight = ignoreZFight;
+        this.cullface = null;
         this.image = image;
         this.overlay = null;
         this.overlayBlendingMode = null;
@@ -70,8 +70,8 @@ public class Face implements ITransformable {
         }
     }
 
-    public Face(boolean ignoreZFight, Point3D... points) {
-        this(null, ignoreZFight, points);
+    public Face(Point3D... points) {
+        this(null, points);
     }
 
     @Override
@@ -144,12 +144,12 @@ public class Face implements ITransformable {
         return oppositeFace != null;
     }
 
-    public boolean isIgnoreZFight() {
-        return ignoreZFight;
+    public Face getCullface() {
+        return cullface;
     }
 
-    public void setIgnoreZFight(boolean ignoreZFight) {
-        this.ignoreZFight = ignoreZFight;
+    public void setCullface(Face cullface) {
+        this.cullface = cullface;
     }
 
     public Point3D[] getPoints() {
@@ -282,14 +282,6 @@ public class Face implements ITransformable {
     @Override
     public void updateLighting(Vector direction, double ambient, double max) {
         Vector normal = new Vector(this.points[1], this.points[2]).cross(new Vector(this.points[0], this.points[1])).normalize();
-        if (oppositeFace != null) {
-            Vector normalInvert = normal.clone().invert();
-            Vector faceVector = this.getCenterVector();
-            Vector oppositeFaceVector = oppositeFace.getCenterVector();
-            if (faceVector.clone().add(normal).distanceSquared(oppositeFaceVector) < faceVector.clone().add(normalInvert).distanceSquared(oppositeFaceVector)) {
-                normal = normalInvert;
-            }
-        }
         double dot = normal.dot(direction);
         double sign = Math.signum(dot);
         dot = sign * dot * dot;
@@ -302,9 +294,9 @@ public class Face implements ITransformable {
         if (image == null) {
             return null;
         } else {
-            if (!ignoreZFight) {
-                if (oppositeFace != null && AVERAGE_DEPTH_COMPARATOR.compare(this, oppositeFace) <= 0) {
-                    if (oppositeFace.priority > this.priority || oppositeFace.getAverageZ() - this.getAverageZ() > 0.1) {
+            if (cullface != null) {
+                if (AVERAGE_DEPTH_COMPARATOR.compare(this, cullface) <= 0) {
+                    if (cullface.priority > this.priority || cullface.getAverageZ() - this.getAverageZ() > 0.1) {
                         return null;
                     }
                 }
@@ -377,9 +369,9 @@ public class Face implements ITransformable {
 
             return new BakeResult(image, transform, (x, y) -> {
                 return getDepthAt(x, y);
-            }, (x, y) -> {
+            }, priority, (x, y) -> {
                 return !MathUtils.greaterThanOrEquals(x, minX) || !MathUtils.greaterThanOrEquals(y, minY) || !MathUtils.lessThanOrEquals(x, maxX) || !MathUtils.lessThanOrEquals(y, maxY);
-            }, ignoreZFight);
+            }, false);
         }
     }
 

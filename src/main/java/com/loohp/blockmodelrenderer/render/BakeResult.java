@@ -34,10 +34,10 @@ public class BakeResult {
     private AffineTransform transform;
     private AffineTransform inverseTransform;
     private DoubleBiFunction depthFunction;
+    private int depthTieBreaker;
     private DoubleBiPredicate outOfBoundPredicate;
-    private boolean ignoreZFight;
 
-    public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, DoubleBiPredicate outOfBoundPredicate, boolean ignoreZFight) {
+    public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, int depthTieBreaker, DoubleBiPredicate outOfBoundPredicate, boolean ignoreZFight) {
         this.texture = texture;
         this.transform = transform;
         try {
@@ -46,8 +46,8 @@ public class BakeResult {
             this.inverseTransform = null;
         }
         this.depthFunction = depthFunction;
+        this.depthTieBreaker = depthTieBreaker;
         this.outOfBoundPredicate = outOfBoundPredicate;
-        this.ignoreZFight = ignoreZFight;
     }
 
     public BufferedImage getTexture() {
@@ -70,8 +70,8 @@ public class BakeResult {
         return depthFunction.apply(x, y);
     }
 
-    public boolean ignoreZFight() {
-        return ignoreZFight;
+    public int getDepthTieBreaker() {
+        return depthTieBreaker;
     }
 
     public boolean isOutOfBound(double x, double y) {
