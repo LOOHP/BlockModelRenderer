@@ -164,17 +164,19 @@ public class ImageUtils {
     }
 
     public static BufferedImage flipHorizontal(BufferedImage image) {
-        Graphics2D g = image.createGraphics();
+        BufferedImage b = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = b.createGraphics();
         g.drawImage(image, image.getWidth(), 0, -image.getWidth(), image.getHeight(), null);
         g.dispose();
-        return image;
+        return b;
     }
 
     public static BufferedImage flipVertically(BufferedImage image) {
-        Graphics2D g = image.createGraphics();
+        BufferedImage b = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = b.createGraphics();
         g.drawImage(image, 0, image.getHeight(), image.getWidth(), -image.getHeight(), null);
         g.dispose();
-        return image;
+        return b;
     }
 
     public static BufferedImage expandCenterAligned(BufferedImage image, int pixels) {
