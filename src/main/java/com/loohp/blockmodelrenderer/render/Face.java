@@ -20,8 +20,11 @@
 
 package com.loohp.blockmodelrenderer.render;
 
+import com.loohp.blockmodelrenderer.blending.BlendingMode;
 import com.loohp.blockmodelrenderer.blending.BlendingModes;
+import com.loohp.blockmodelrenderer.serialize.Serializable;
 import com.loohp.blockmodelrenderer.utils.ColorUtils;
+import com.loohp.blockmodelrenderer.utils.DataSerializationUtils;
 import com.loohp.blockmodelrenderer.utils.ImageUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 import com.loohp.blockmodelrenderer.utils.PlaneUtils;
@@ -29,13 +32,18 @@ import com.loohp.blockmodelrenderer.utils.PointConversionUtils;
 
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class Face implements ITransformable {
+public class Face implements ITransformable, Serializable {
 
     public static final Comparator<Face> AVERAGE_DEPTH_COMPARATOR = Comparator.comparing(face -> face.getAverageZ());
 
@@ -72,6 +80,55 @@ public class Face implements ITransformable {
 
     public Face(Point3D... points) {
         this(null, points);
+    }
+
+    public Face(InputStream inputStream) throws IOException {
+        DataInputStream in = new DataInputStream(inputStream);
+        this.image = DataSerializationUtils.readImage(in);
+        this.overlay = DataSerializationUtils.readArray(BufferedImage.class, in, true, i -> DataSerializationUtils.readImage(i));
+        this.overlayBlendingMode = DataSerializationUtils.readArray(BlendingModes.class, in, true, i -> {
+            BlendingMode[] modes = BlendingMode.values();
+            return BlendingModes.of(modes[i.readInt()], modes[i.readInt()], modes[i.readInt()], modes[i.readInt()]);
+        });
+        this.overlayAdditionFactor = in.readDouble();
+        this.oppositeFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+        this.priority = in.readByte();
+        this.lightRatio = in.readDouble();
+        this.points = DataSerializationUtils.readArray(Point3D.class, in, false, i -> new Point3D(i.readInt(), i.readInt(), i.readInt()));
+        this.axis = DataSerializationUtils.readArray(Vector[].class, in, false, i -> {
+            return DataSerializationUtils.readArray(Vector.class, i, false, i1 -> new Vector(i1.readDouble(), i1.readDouble(), i1.readDouble()));
+        });
+        this.cullface = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+    }
+
+    @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        DataSerializationUtils.writeImage(image, out);
+        DataSerializationUtils.writeArray(overlay, out, true, (i, o) -> DataSerializationUtils.writeImage(i, o));
+        DataSerializationUtils.writeArray(overlayBlendingMode, out, true, (m, o) -> {
+            o.writeInt(m.getSrcColorComposite().ordinal());
+            o.writeInt(m.getDesColorComposite().ordinal());
+            o.writeInt(m.getSrcAlphaComposite().ordinal());
+            o.writeInt(m.getDesAlphaComposite().ordinal());
+        });
+        out.writeDouble(overlayAdditionFactor);
+        DataSerializationUtils.writeNullable(oppositeFace, out, (f, o) -> f.serialize(o));
+        out.writeByte(priority);
+        out.writeDouble(lightRatio);
+        DataSerializationUtils.writeArray(points, out, false, (p, o) -> {
+            o.writeDouble(p.x);
+            o.writeDouble(p.y);
+            o.writeDouble(p.z);
+        });
+        DataSerializationUtils.writeArray(axis, out, false, (a, o) -> {
+            DataSerializationUtils.writeArray(a, o, false, (v, o1) -> {
+                o1.writeDouble(v.getX());
+                o1.writeDouble(v.getY());
+                o1.writeDouble(v.getZ());
+            });
+        });
+        DataSerializationUtils.writeNullable(cullface, out, (f, o) -> f.serialize(o));
     }
 
     @Override

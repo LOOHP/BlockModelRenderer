@@ -21,14 +21,21 @@
 package com.loohp.blockmodelrenderer.render;
 
 import com.loohp.blockmodelrenderer.blending.BlendingModes;
+import com.loohp.blockmodelrenderer.serialize.Serializable;
+import com.loohp.blockmodelrenderer.utils.DataSerializationUtils;
 
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class Hexahedron implements ITransformable {
+public class Hexahedron implements ITransformable, Serializable {
 
     public static Hexahedron fromCorners(Point3D p1, Point3D p2, BufferedImage[] images) {
         if (images.length != 6) {
@@ -76,6 +83,46 @@ public class Hexahedron implements ITransformable {
         byDirection = Collections.unmodifiableList(Arrays.asList(upFace, downFace, northFace, eastFace, southFace, westFace));
         byAverageZ = new ArrayList<>(Arrays.asList(upFace, downFace, northFace, eastFace, southFace, westFace));
         sortFaces();
+    }
+
+    public Hexahedron(InputStream inputStream) throws IOException {
+        DataInputStream in = new DataInputStream(inputStream);
+
+        this.upFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+        this.downFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+        this.northFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+        this.eastFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+        this.southFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+        this.westFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+
+        this.upFace.oppositeFace = this.downFace;
+        this.downFace.oppositeFace = this.upFace;
+        this.northFace.oppositeFace = this.southFace;
+        this.eastFace.oppositeFace = this.westFace;
+        this.southFace.oppositeFace = this.northFace;
+        this.westFace.oppositeFace = this.eastFace;
+
+        this.upFace.priority = 1;
+        this.downFace.priority = 0;
+        this.northFace.priority = 0;
+        this.eastFace.priority = 1;
+        this.southFace.priority = 1;
+        this.westFace.priority = 0;
+
+        byDirection = Collections.unmodifiableList(Arrays.asList(upFace, downFace, northFace, eastFace, southFace, westFace));
+        byAverageZ = new ArrayList<>(Arrays.asList(upFace, downFace, northFace, eastFace, southFace, westFace));
+        sortFaces();
+    }
+
+    @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        DataSerializationUtils.writeNullable(upFace, out, (f, o) -> f.serialize(o));
+        DataSerializationUtils.writeNullable(downFace, out, (f, o) -> f.serialize(o));
+        DataSerializationUtils.writeNullable(northFace, out, (f, o) -> f.serialize(o));
+        DataSerializationUtils.writeNullable(eastFace, out, (f, o) -> f.serialize(o));
+        DataSerializationUtils.writeNullable(southFace, out, (f, o) -> f.serialize(o));
+        DataSerializationUtils.writeNullable(westFace, out, (f, o) -> f.serialize(o));
     }
 
     @Override

@@ -21,12 +21,18 @@
 package com.loohp.blockmodelrenderer.render;
 
 import com.loohp.blockmodelrenderer.blending.BlendingModes;
+import com.loohp.blockmodelrenderer.serialize.Serializable;
 import com.loohp.blockmodelrenderer.utils.ColorUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 import com.loohp.blockmodelrenderer.utils.TaskCompletion;
 
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -34,7 +40,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-public class Model implements ITransformable {
+public class Model implements ITransformable, Serializable {
 
     public static final int PIXEL_PER_THREAD = 256;
 
@@ -52,6 +58,29 @@ public class Model implements ITransformable {
 
     public Model(Hexahedron... components) {
         this(new ArrayList<>(Arrays.asList(components)));
+    }
+
+    public Model(InputStream inputStream) throws IOException {
+        DataInputStream in = new DataInputStream(inputStream);
+        int size = in.readInt();
+        this.components = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            components.add(new Hexahedron(in));
+        }
+        this.faces = new ArrayList<>();
+        for (Hexahedron hexahedron : components) {
+            this.faces.addAll(hexahedron.getFacesByAverageZ());
+        }
+        sortFaces();
+    }
+
+    @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        out.writeInt(components.size());
+        for (Hexahedron hexahedron : components) {
+            hexahedron.serialize(out);
+        }
     }
 
     public void append(Model model) {
@@ -181,5 +210,4 @@ public class Model implements ITransformable {
         }
         return new TaskCompletion(futures);
     }
-
 }
