@@ -420,14 +420,9 @@ public class Face implements ITransformable, Serializable {
             }
             transform.concatenate(AffineTransform.getScaleInstance(scaleX, scaleY));
 
-            double maxX = getMaxX();
-            double maxY = getMaxY();
-            double minX = getMinX();
-            double minY = getMinY();
-
             return new BakeResult(image, ((DataBufferInt) image.getRaster().getDataBuffer()).getData(), transform, (x, y) -> {
                 return getDepthAt(x, y);
-            }, priority, maxX, maxY, minX, minY);
+            }, priority, getMaxX(), getMaxY(), getMinX(), getMinY());
         }
     }
 

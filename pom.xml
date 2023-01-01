@@ -74,6 +74,10 @@
 									<pattern>org.zoodb.index</pattern>
 									<shadedPattern>com.loohp.blockmodelrenderer.libs.org.zoodb.index</shadedPattern>
 								</relocation>
+								<relocation>
+									<pattern>org.tinspin.index</pattern>
+									<shadedPattern>com.loohp.blockmodelrenderer.libs.org.tinspin.index</shadedPattern>
+								</relocation>
 							</relocations>
 						</configuration>
 					</execution>
@@ -115,9 +119,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>ch.ethz.globis.phtree</groupId>
-			<artifactId>phtree</artifactId>
-			<version>2.5.0</version>
+			<groupId>org.tinspin</groupId>
+			<artifactId>tinspin-indexes</artifactId>
+			<version>1.7.1</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>

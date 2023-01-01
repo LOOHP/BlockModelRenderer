@@ -20,12 +20,13 @@
 
 package com.loohp.blockmodelrenderer.render;
 
-import ch.ethz.globis.phtree.PhTreeSolidF;
 import com.loohp.blockmodelrenderer.blending.BlendingModes;
 import com.loohp.blockmodelrenderer.serialize.Serializable;
 import com.loohp.blockmodelrenderer.utils.ColorUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 import com.loohp.blockmodelrenderer.utils.TaskCompletion;
+import org.tinspin.index.rtree.RTree;
+import org.tinspin.index.rtree.RTreeIterator;
 
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
@@ -134,11 +135,11 @@ public class Model implements ITransformable, Serializable {
     }
 
     public TaskCompletion render(BufferedImage source, boolean useZBuffer, AffineTransform baseTransform, BlendingModes blendingMode, ExecutorService service) {
-        PhTreeSolidF<BakeResult> bakes = PhTreeSolidF.create(2);
+        RTree<BakeResult> bakes = RTree.createRStar(2);
         for (Face face : faces) {
             BakeResult result = face.bake(baseTransform);
             if (result != null && result.hasInverseTransform()) {
-                bakes.put(new double[] {result.getMinX(), result.getMinY()}, new double[] {result.getMaxX(), result.getMaxY()}, result);
+                bakes.insert(new double[] {result.getMinX(), result.getMinY()}, new double[] {result.getMaxX(), result.getMaxY()}, result);
             }
         }
         int w = source.getWidth();
@@ -159,7 +160,7 @@ public class Model implements ITransformable, Serializable {
             futures.add(service.submit(() -> {
                 double[] pointSrc = new double[2];
                 double[] pointDes = new double[2];
-                double[] reverseTransformedPos = new double[2];
+                double[] transformedPos = new double[2];
                 for (int u = 0; u < PIXEL_PER_THREAD; u++) {
                     int position = currentI + u;
                     if (position >= pixelCount) {
@@ -170,18 +171,15 @@ public class Model implements ITransformable, Serializable {
                     int y = position / w;
                     double reverseTransformedX = (x - baseTranslateX) / baseScaleX;
                     double reverseTransformedY = (y - baseTranslateY) / baseScaleY;
-                    reverseTransformedPos[0] = reverseTransformedX;
-                    reverseTransformedPos[1] = reverseTransformedY;
+                    transformedPos[0] = reverseTransformedX;
+                    transformedPos[1] = reverseTransformedY;
                     int newColor = sourceColor;
                     double z = MathUtils.NEGATIVE_MAX_DOUBLE;
                     int depthTieBreaker = Integer.MIN_VALUE;
                     pointSrc[0] = x;
                     pointSrc[1] = y;
-                    for (PhTreeSolidF.PhQuerySF<BakeResult> itr = bakes.queryIntersect(reverseTransformedPos, reverseTransformedPos); itr.hasNext();) {
-                        BakeResult bake = itr.next();
-                        if (bake.isOutOfBound(reverseTransformedX, reverseTransformedY)) {
-                            continue;
-                        }
+                    for (RTreeIterator<BakeResult> itr = bakes.queryIntersect(transformedPos, transformedPos); itr.hasNext();) {
+                        BakeResult bake = itr.next().value();
                         bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
                         BufferedImage image = bake.getTexture();
                         if (!MathUtils.greaterThanOrEquals(pointDes[0], 0.0) || !MathUtils.greaterThanOrEquals(pointDes[1], 0.0) || !MathUtils.lessThan(pointDes[0], image.getWidth()) || !MathUtils.lessThan(pointDes[1], image.getHeight())) {

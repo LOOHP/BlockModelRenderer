@@ -24,8 +24,8 @@ public class MathUtils {
 
     public static final double NEGATIVE_MAX_DOUBLE = -Double.MAX_VALUE;
 
-    private final static float EPSILON_FLOAT = 0.000001f;
-    private final static double EPSILON_DOUBLE = 0.000001;
+    public final static float EPSILON_FLOAT = 0.000001f;
+    public final static double EPSILON_DOUBLE = 0.000001;
 
     public static boolean equals(float a, float b) {
         return a == b || Math.abs(a - b) < EPSILON_FLOAT;
