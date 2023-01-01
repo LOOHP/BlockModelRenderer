@@ -21,7 +21,6 @@
 package com.loohp.blockmodelrenderer.render;
 
 import com.loohp.blockmodelrenderer.utils.DoubleBiFunction;
-import com.loohp.blockmodelrenderer.utils.DoubleBiPredicate;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 
 import java.awt.geom.AffineTransform;
@@ -31,15 +30,24 @@ import java.awt.image.BufferedImage;
 public class BakeResult {
 
     private final BufferedImage texture;
+    private final int[] textureDataArray;
     private final AffineTransform transform;
     private final AffineTransform inverseTransform;
     private final DoubleBiFunction depthFunction;
     private final int depthTieBreaker;
-    private final DoubleBiPredicate outOfBoundPredicate;
+    private final double maxX;
+    private final double maxY;
+    private final double minX;
+    private final double minY;
 
-    public BakeResult(BufferedImage texture, AffineTransform transform, DoubleBiFunction depthFunction, int depthTieBreaker, DoubleBiPredicate outOfBoundPredicate) {
+    public BakeResult(BufferedImage texture, int[] textureDataArray, AffineTransform transform, DoubleBiFunction depthFunction, int depthTieBreaker, double maxX, double maxY, double minX, double minY) {
         this.texture = texture;
+        this.textureDataArray = textureDataArray;
         this.transform = transform;
+        this.maxX = maxX;
+        this.maxY = maxY;
+        this.minX = minX;
+        this.minY = minY;
         AffineTransform inverseTransform;
         try {
             inverseTransform = MathUtils.equals(transform.getDeterminant(), 0.0) ? null : transform.createInverse();
@@ -49,11 +57,14 @@ public class BakeResult {
         this.inverseTransform = inverseTransform;
         this.depthFunction = depthFunction;
         this.depthTieBreaker = depthTieBreaker;
-        this.outOfBoundPredicate = outOfBoundPredicate;
     }
 
     public BufferedImage getTexture() {
         return texture;
+    }
+
+    public int[] getTextureDataArray() {
+        return textureDataArray;
     }
 
     public AffineTransform getTransform() {
@@ -77,7 +88,22 @@ public class BakeResult {
     }
 
     public boolean isOutOfBound(double x, double y) {
-        return outOfBoundPredicate.test(x, y);
+        return !MathUtils.greaterThanOrEquals(x, minX) || !MathUtils.greaterThanOrEquals(y, minY) || !MathUtils.lessThanOrEquals(x, maxX) || !MathUtils.lessThanOrEquals(y, maxY);
     }
 
+    public double getMaxX() {
+        return maxX;
+    }
+
+    public double getMaxY() {
+        return maxY;
+    }
+
+    public double getMinX() {
+        return minX;
+    }
+
+    public double getMinY() {
+        return minY;
+    }
 }

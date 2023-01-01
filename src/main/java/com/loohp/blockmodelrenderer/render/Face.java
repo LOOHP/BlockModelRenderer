@@ -32,6 +32,7 @@ import com.loohp.blockmodelrenderer.utils.PointConversionUtils;
 
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -424,11 +425,9 @@ public class Face implements ITransformable, Serializable {
             double minX = getMinX();
             double minY = getMinY();
 
-            return new BakeResult(image, transform, (x, y) -> {
+            return new BakeResult(image, ((DataBufferInt) image.getRaster().getDataBuffer()).getData(), transform, (x, y) -> {
                 return getDepthAt(x, y);
-            }, priority, (x, y) -> {
-                return !MathUtils.greaterThanOrEquals(x, minX) || !MathUtils.greaterThanOrEquals(y, minY) || !MathUtils.lessThanOrEquals(x, maxX) || !MathUtils.lessThanOrEquals(y, maxY);
-            });
+            }, priority, maxX, maxY, minX, minY);
         }
     }
 

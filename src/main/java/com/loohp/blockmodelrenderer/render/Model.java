@@ -20,6 +20,7 @@
 
 package com.loohp.blockmodelrenderer.render;
 
+import ch.ethz.globis.phtree.PhTreeSolidF;
 import com.loohp.blockmodelrenderer.blending.BlendingModes;
 import com.loohp.blockmodelrenderer.serialize.Serializable;
 import com.loohp.blockmodelrenderer.utils.ColorUtils;
@@ -28,6 +29,8 @@ import com.loohp.blockmodelrenderer.utils.TaskCompletion;
 
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferInt;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -35,7 +38,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -132,11 +134,11 @@ public class Model implements ITransformable, Serializable {
     }
 
     public TaskCompletion render(BufferedImage source, boolean useZBuffer, AffineTransform baseTransform, BlendingModes blendingMode, ExecutorService service) {
-        List<BakeResult> bakes = new LinkedList<>();
+        PhTreeSolidF<BakeResult> bakes = PhTreeSolidF.create(2);
         for (Face face : faces) {
             BakeResult result = face.bake(baseTransform);
             if (result != null && result.hasInverseTransform()) {
-                bakes.add(result);
+                bakes.put(new double[] {result.getMinX(), result.getMinY()}, new double[] {result.getMaxX(), result.getMaxY()}, result);
             }
         }
         int w = source.getWidth();
@@ -145,7 +147,11 @@ public class Model implements ITransformable, Serializable {
         double baseTranslateY = baseTransform.getTranslateY();
         double baseScaleX = baseTransform.getScaleX();
         double baseScaleY = -baseTransform.getScaleY();
-        int[] sourceColors = source.getRGB(0, 0, w, h, null, 0, w);
+        DataBuffer dataBuffer = source.getRaster().getDataBuffer();
+        if (!(dataBuffer instanceof DataBufferInt)) {
+            throw new RuntimeException("This image is not compatible for rendering: Raster DataBuffer of BufferedImage is not a DataBufferInt");
+        }
+        int[] sourceColors = ((DataBufferInt) source.getRaster().getDataBuffer()).getData();
         int pixelCount = w * h;
         List<Future<?>> futures = new ArrayList<>((pixelCount / PIXEL_PER_THREAD) + 1);
         for (int i = 0; i < pixelCount; i += PIXEL_PER_THREAD) {
@@ -153,6 +159,7 @@ public class Model implements ITransformable, Serializable {
             futures.add(service.submit(() -> {
                 double[] pointSrc = new double[2];
                 double[] pointDes = new double[2];
+                double[] reverseTransformedPos = new double[2];
                 for (int u = 0; u < PIXEL_PER_THREAD; u++) {
                     int position = currentI + u;
                     if (position >= pixelCount) {
@@ -163,12 +170,15 @@ public class Model implements ITransformable, Serializable {
                     int y = position / w;
                     double reverseTransformedX = (x - baseTranslateX) / baseScaleX;
                     double reverseTransformedY = (y - baseTranslateY) / baseScaleY;
+                    reverseTransformedPos[0] = reverseTransformedX;
+                    reverseTransformedPos[1] = reverseTransformedY;
                     int newColor = sourceColor;
                     double z = MathUtils.NEGATIVE_MAX_DOUBLE;
                     int depthTieBreaker = Integer.MIN_VALUE;
                     pointSrc[0] = x;
                     pointSrc[1] = y;
-                    for (BakeResult bake : bakes) {
+                    for (PhTreeSolidF.PhQuerySF<BakeResult> itr = bakes.queryIntersect(reverseTransformedPos, reverseTransformedPos); itr.hasNext();) {
+                        BakeResult bake = itr.next();
                         if (bake.isOutOfBound(reverseTransformedX, reverseTransformedY)) {
                             continue;
                         }
@@ -177,7 +187,7 @@ public class Model implements ITransformable, Serializable {
                         if (!MathUtils.greaterThanOrEquals(pointDes[0], 0.0) || !MathUtils.greaterThanOrEquals(pointDes[1], 0.0) || !MathUtils.lessThan(pointDes[0], image.getWidth()) || !MathUtils.lessThan(pointDes[1], image.getHeight())) {
                             continue;
                         }
-                        int imageColor = image.getRGB((int) pointDes[0], (int) pointDes[1]);
+                        int imageColor = bake.getTextureDataArray()[(int) pointDes[0] + ((int) pointDes[1] * image.getWidth())];
                         if (useZBuffer) {
                             int imageAlpha = ColorUtils.getAlpha(imageColor);
                             int sourceAlpha = ColorUtils.getAlpha(sourceColor);
@@ -203,7 +213,7 @@ public class Model implements ITransformable, Serializable {
                         }
                     }
                     if (newColor != sourceColor) {
-                        source.setRGB(x, y, newColor);
+                        sourceColors[position] = newColor;
                     }
                 }
             }));
