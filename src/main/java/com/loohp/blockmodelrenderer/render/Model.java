@@ -152,7 +152,7 @@ public class Model implements ITransformable, Serializable {
         if (!(dataBuffer instanceof DataBufferInt)) {
             throw new RuntimeException("This image is not compatible for rendering: Raster DataBuffer of BufferedImage is not a DataBufferInt");
         }
-        int[] sourceColors = ((DataBufferInt) source.getRaster().getDataBuffer()).getData();
+        int[] sourceColors = ((DataBufferInt) dataBuffer).getData();
         int pixelCount = w * h;
         List<Future<?>> futures = new ArrayList<>((pixelCount / PIXEL_PER_THREAD) + 1);
         for (int i = 0; i < pixelCount; i += PIXEL_PER_THREAD) {
@@ -161,6 +161,7 @@ public class Model implements ITransformable, Serializable {
                 double[] pointSrc = new double[2];
                 double[] pointDes = new double[2];
                 double[] transformedPos = new double[2];
+                RTreeIterator<BakeResult> itr = bakes.queryIntersect(transformedPos, transformedPos);
                 for (int u = 0; u < PIXEL_PER_THREAD; u++) {
                     int position = currentI + u;
                     if (position >= pixelCount) {
@@ -178,7 +179,8 @@ public class Model implements ITransformable, Serializable {
                     int depthTieBreaker = Integer.MIN_VALUE;
                     pointSrc[0] = x;
                     pointSrc[1] = y;
-                    for (RTreeIterator<BakeResult> itr = bakes.queryIntersect(transformedPos, transformedPos); itr.hasNext();) {
+                    itr.reset(transformedPos, transformedPos);
+                    while (itr.hasNext()) {
                         BakeResult bake = itr.next().value();
                         bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
                         BufferedImage image = bake.getTexture();
