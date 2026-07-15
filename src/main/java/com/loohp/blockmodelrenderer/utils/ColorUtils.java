@@ -27,7 +27,33 @@ import com.loohp.blockmodelrenderer.blending.BlendingMode;
 public class ColorUtils {
 
     public static int composite(int srcColor, int desColor, BlendingModes blendingModes) {
+        if (blendingModes == BlendingModes.NORMAL) {
+            return compositeNormal(srcColor, desColor);
+        }
+        if (blendingModes == BlendingModes.GLINT) {
+            return compositeGlint(srcColor, desColor);
+        }
         return composite(srcColor, desColor, blendingModes.getSrcColorComposite(), blendingModes.getDesColorComposite(), blendingModes.getSrcAlphaComposite(), blendingModes.getDesAlphaComposite());
+    }
+
+    private static int compositeNormal(int srcColor, int desColor) {
+        double srcAlphaFactor = getAlpha(srcColor) / 255.0;
+        double desFactor = 1.0 - srcAlphaFactor;
+        int red = Math.min(255, (int) (getRed(srcColor) * srcAlphaFactor + getRed(desColor) * desFactor));
+        int green = Math.min(255, (int) (getGreen(srcColor) * srcAlphaFactor + getGreen(desColor) * desFactor));
+        int blue = Math.min(255, (int) (getBlue(srcColor) * srcAlphaFactor + getBlue(desColor) * desFactor));
+        int alpha = Math.min(255, (int) (getAlpha(srcColor) + getAlpha(desColor) * desFactor));
+        return getIntFromColor(red, green, blue, alpha);
+    }
+
+    private static int compositeGlint(int srcColor, int desColor) {
+        int srcRed = getRed(srcColor);
+        int srcGreen = getGreen(srcColor);
+        int srcBlue = getBlue(srcColor);
+        int red = Math.min(255, (int) (srcRed * (srcRed / 255.0) + getRed(desColor)));
+        int green = Math.min(255, (int) (srcGreen * (srcGreen / 255.0) + getGreen(desColor)));
+        int blue = Math.min(255, (int) (srcBlue * (srcBlue / 255.0) + getBlue(desColor)));
+        return getIntFromColor(red, green, blue, getAlpha(desColor));
     }
 
     public static int composite(int srcColor, int desColor, BlendingMode srcComposite, BlendingMode desComposite) {

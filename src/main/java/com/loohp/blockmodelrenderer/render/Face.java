@@ -25,14 +25,15 @@ import com.loohp.blockmodelrenderer.blending.BlendingModes;
 import com.loohp.blockmodelrenderer.serialize.Serializable;
 import com.loohp.blockmodelrenderer.utils.ColorUtils;
 import com.loohp.blockmodelrenderer.utils.DataSerializationUtils;
-import com.loohp.blockmodelrenderer.utils.ImageUtils;
 import com.loohp.blockmodelrenderer.utils.MathUtils;
 import com.loohp.blockmodelrenderer.utils.PlaneUtils;
 import com.loohp.blockmodelrenderer.utils.PointConversionUtils;
 
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
+import java.awt.image.SinglePixelPackedSampleModel;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -365,12 +366,45 @@ public class Face implements ITransformable, Serializable {
                 points2d[i] = PointConversionUtils.convert(points[i], true);
             }
 
-            BufferedImage image = ImageUtils.multiply(ImageUtils.copyImage(this.image), lightRatio);
-            if (overlay != null) {
+            boolean hasOverlay = overlay != null && overlay.length > 0;
+            BufferedImage image;
+            int[] imageData;
+            if (MathUtils.equals(lightRatio, 1.0) && !hasOverlay && hasContiguousIntArgbData(this.image)) {
+                image = this.image;
+                imageData = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
+            } else {
+                int width = this.image.getWidth();
+                int height = this.image.getHeight();
+                image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+                imageData = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
+                if (hasContiguousIntArgbData(this.image)) {
+                    System.arraycopy(((DataBufferInt) this.image.getRaster().getDataBuffer()).getData(), 0, imageData, 0, imageData.length);
+                } else {
+                    this.image.getRGB(0, 0, width, height, imageData, 0, width);
+                }
+                if (!MathUtils.equals(lightRatio, 1.0)) {
+                    for (int i = 0; i < imageData.length; i++) {
+                        int colorValue = imageData[i];
+                        int alpha = ColorUtils.getAlpha(colorValue);
+                        if (alpha != 0) {
+                            int red = Math.min(255, Math.max(0, (int) (ColorUtils.getRed(colorValue) * lightRatio)));
+                            int green = Math.min(255, Math.max(0, (int) (ColorUtils.getGreen(colorValue) * lightRatio)));
+                            int blue = Math.min(255, Math.max(0, (int) (ColorUtils.getBlue(colorValue) * lightRatio)));
+                            imageData[i] = ColorUtils.getIntFromColor(red, green, blue, alpha);
+                        }
+                    }
+                }
+            }
+            if (hasOverlay) {
+                int width = image.getWidth();
+                int height = image.getHeight();
                 for (int i = 0; i < overlay.length; i++) {
                     BufferedImage overlayLayer = overlay[i];
                     BlendingModes blendingModes = overlayBlendingMode == null || i >= overlayBlendingMode.length || overlayBlendingMode[i] == null ? BlendingModes.GLINT : overlayBlendingMode[i];
-                    ImageUtils.transformRGB(image, (x, y, colorValue) -> ColorUtils.composite(overlayLayer.getRGB(x, y), colorValue, blendingModes));
+                    int[] overlayData = overlayLayer.getRGB(0, 0, width, height, null, 0, width);
+                    for (int j = 0; j < imageData.length; j++) {
+                        imageData[j] = ColorUtils.composite(overlayData[j], imageData[j], blendingModes);
+                    }
                 }
             }
 
@@ -384,8 +418,28 @@ public class Face implements ITransformable, Serializable {
                     points2d[0].y
             ));
 
-            return new BakeResult(image, ((DataBufferInt) image.getRaster().getDataBuffer()).getData(), transform, this::getDepthAt, priority, getMaxX(), getMaxY(), getMinX(), getMinY());
+            Vector planeNormal = new Vector(this.points[3], this.points[0]).cross(new Vector(this.points[1], this.points[0])).normalize();
+            double depthX = -planeNormal.getX() / planeNormal.getZ();
+            double depthY = -planeNormal.getY() / planeNormal.getZ();
+            double depthOffset = this.points[0].z - depthX * this.points[0].x - depthY * this.points[0].y;
+
+            return new BakeResult(image, imageData, transform, (x, y) -> depthX * x + depthY * y + depthOffset, priority, getMaxX(), getMaxY(), getMinX(), getMinY());
         }
+    }
+
+    private static boolean hasContiguousIntArgbData(BufferedImage image) {
+        if (image.getType() != BufferedImage.TYPE_INT_ARGB) {
+            return false;
+        }
+        DataBuffer dataBuffer = image.getRaster().getDataBuffer();
+        if (!(dataBuffer instanceof DataBufferInt) || dataBuffer.getOffset() != 0) {
+            return false;
+        }
+        if (!(image.getRaster().getSampleModel() instanceof SinglePixelPackedSampleModel)) {
+            return false;
+        }
+        SinglePixelPackedSampleModel sampleModel = (SinglePixelPackedSampleModel) image.getRaster().getSampleModel();
+        return sampleModel.getScanlineStride() == image.getWidth() && ((DataBufferInt) dataBuffer).getData().length == image.getWidth() * image.getHeight();
     }
 
 }

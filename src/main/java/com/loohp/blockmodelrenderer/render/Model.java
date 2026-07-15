@@ -154,22 +154,19 @@ public class Model implements ITransformable, Serializable {
         }
         int[] sourceColors = ((DataBufferInt) dataBuffer).getData();
         int pixelCount = w * h;
-        List<Future<?>> futures = new ArrayList<>((pixelCount / PIXEL_PER_THREAD) + 1);
-        for (int i = 0; i < pixelCount; i += PIXEL_PER_THREAD) {
+        int targetTaskCount = Math.max(1, Runtime.getRuntime().availableProcessors() * 4);
+        int pixelsPerTask = Math.max(PIXEL_PER_THREAD, (pixelCount + targetTaskCount - 1) / targetTaskCount);
+        List<Future<?>> futures = new ArrayList<>((pixelCount + pixelsPerTask - 1) / pixelsPerTask);
+        for (int i = 0; i < pixelCount; i += pixelsPerTask) {
             int currentI = i;
+            int endI = Math.min(pixelCount, i + pixelsPerTask);
             futures.add(service.submit(() -> {
-                double[] pointSrc = new double[2];
-                double[] pointDes = new double[2];
                 double[] transformedPos = new double[2];
                 RTreeIterator<BakeResult> itr = bakes.queryIntersect(transformedPos, transformedPos);
-                for (int u = 0; u < PIXEL_PER_THREAD; u++) {
-                    int position = currentI + u;
-                    if (position >= pixelCount) {
-                        break;
-                    }
+                int y = currentI / w;
+                int x = currentI - y * w;
+                for (int position = currentI; position < endI; position++) {
                     int sourceColor = sourceColors[position];
-                    int x = position % w;
-                    int y = position / w;
                     double reverseTransformedX = (x - baseTranslateX) / baseScaleX;
                     double reverseTransformedY = (y - baseTranslateY) / baseScaleY;
                     transformedPos[0] = reverseTransformedX;
@@ -177,20 +174,18 @@ public class Model implements ITransformable, Serializable {
                     int newColor = sourceColor;
                     double z = MathUtils.NEGATIVE_MAX_DOUBLE;
                     int depthTieBreaker = Integer.MIN_VALUE;
-                    pointSrc[0] = x;
-                    pointSrc[1] = y;
                     itr.reset(transformedPos, transformedPos);
                     while (itr.hasNext()) {
                         BakeResult bake = itr.next().value();
-                        bake.getInverseTransform().transform(pointSrc, 0, pointDes, 0, 1);
+                        double textureX = bake.getInverseTransformedX(x, y);
+                        double textureY = bake.getInverseTransformedY(x, y);
                         BufferedImage image = bake.getTexture();
-                        if (!MathUtils.greaterThanOrEquals(pointDes[0], 0.0) || !MathUtils.greaterThanOrEquals(pointDes[1], 0.0) || !MathUtils.lessThan(pointDes[0], image.getWidth()) || !MathUtils.lessThan(pointDes[1], image.getHeight())) {
+                        if (!MathUtils.greaterThanOrEquals(textureX, 0.0) || !MathUtils.greaterThanOrEquals(textureY, 0.0) || !MathUtils.lessThan(textureX, image.getWidth()) || !MathUtils.lessThan(textureY, image.getHeight())) {
                             continue;
                         }
-                        int imageColor = bake.getTextureDataArray()[(int) pointDes[0] + ((int) pointDes[1] * image.getWidth())];
+                        int imageColor = bake.getTextureDataArray()[(int) textureX + ((int) textureY * image.getWidth())];
                         if (useZBuffer) {
-                            int imageAlpha = ColorUtils.getAlpha(imageColor);
-                            int sourceAlpha = ColorUtils.getAlpha(sourceColor);
+                            int imageAlpha = bake.isFullyOpaque() ? 255 : ColorUtils.getAlpha(imageColor);
                             if (imageAlpha > 0) {
                                 double depth = bake.getDepthAt(reverseTransformedX, reverseTransformedY);
                                 int tieBreak = bake.getDepthTieBreaker();
@@ -205,15 +200,22 @@ public class Model implements ITransformable, Serializable {
                                         newColor = ColorUtils.composite(imageColor, newColor, blendingMode);
                                     }
                                 }
-                            } else if (sourceAlpha < 255) {
+                            } else if (ColorUtils.getAlpha(sourceColor) < 255) {
                                 newColor = ColorUtils.composite(newColor, imageColor, blendingMode);
                             }
+                        } else if (bake.isFullyOpaque() && blendingMode == BlendingModes.NORMAL) {
+                            newColor = imageColor;
                         } else {
                             newColor = ColorUtils.composite(imageColor, newColor, blendingMode);
                         }
                     }
                     if (newColor != sourceColor) {
                         sourceColors[position] = newColor;
+                    }
+                    x++;
+                    if (x >= w) {
+                        x = 0;
+                        y++;
                     }
                 }
             }));

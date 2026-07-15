@@ -33,8 +33,15 @@ public class BakeResult {
     private final int[] textureDataArray;
     private final AffineTransform transform;
     private final AffineTransform inverseTransform;
+    private final double inverseM00;
+    private final double inverseM10;
+    private final double inverseM01;
+    private final double inverseM11;
+    private final double inverseM02;
+    private final double inverseM12;
     private final DoubleBiFunction depthFunction;
     private final int depthTieBreaker;
+    private final boolean fullyOpaque;
     private final double maxX;
     private final double maxY;
     private final double minX;
@@ -55,8 +62,31 @@ public class BakeResult {
             inverseTransform = null;
         }
         this.inverseTransform = inverseTransform;
+        if (inverseTransform == null) {
+            this.inverseM00 = 0.0;
+            this.inverseM10 = 0.0;
+            this.inverseM01 = 0.0;
+            this.inverseM11 = 0.0;
+            this.inverseM02 = 0.0;
+            this.inverseM12 = 0.0;
+        } else {
+            this.inverseM00 = inverseTransform.getScaleX();
+            this.inverseM10 = inverseTransform.getShearY();
+            this.inverseM01 = inverseTransform.getShearX();
+            this.inverseM11 = inverseTransform.getScaleY();
+            this.inverseM02 = inverseTransform.getTranslateX();
+            this.inverseM12 = inverseTransform.getTranslateY();
+        }
         this.depthFunction = depthFunction;
         this.depthTieBreaker = depthTieBreaker;
+        boolean fullyOpaque = true;
+        for (int color : textureDataArray) {
+            if ((color >>> 24) != 255) {
+                fullyOpaque = false;
+                break;
+            }
+        }
+        this.fullyOpaque = fullyOpaque;
     }
 
     public BufferedImage getTexture() {
@@ -79,12 +109,24 @@ public class BakeResult {
         return inverseTransform;
     }
 
+    public double getInverseTransformedX(double x, double y) {
+        return inverseM00 * x + inverseM01 * y + inverseM02;
+    }
+
+    public double getInverseTransformedY(double x, double y) {
+        return inverseM10 * x + inverseM11 * y + inverseM12;
+    }
+
     public double getDepthAt(double x, double y) {
         return depthFunction.apply(x, y);
     }
 
     public int getDepthTieBreaker() {
         return depthTieBreaker;
+    }
+
+    public boolean isFullyOpaque() {
+        return fullyOpaque;
     }
 
     public boolean isOutOfBound(double x, double y) {
