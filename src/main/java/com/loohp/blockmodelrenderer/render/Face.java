@@ -370,59 +370,21 @@ public class Face implements ITransformable, Serializable {
                 for (int i = 0; i < overlay.length; i++) {
                     BufferedImage overlayLayer = overlay[i];
                     BlendingModes blendingModes = overlayBlendingMode == null || i >= overlayBlendingMode.length || overlayBlendingMode[i] == null ? BlendingModes.GLINT : overlayBlendingMode[i];
-                    image = ImageUtils.transformRGB(image, (x, y, colorValue) -> {
-                        return ColorUtils.composite(overlayLayer.getRGB(x, y), colorValue, blendingModes);
-                    });
+                    ImageUtils.transformRGB(image, (x, y, colorValue) -> ColorUtils.composite(overlayLayer.getRGB(x, y), colorValue, blendingModes));
                 }
             }
-
-            double w = 0;
-            double h = 0;
-            double scaleX;
-            double scaleY;
-            boolean first = true;
-
-            do {
-                if (!first) {
-                    points2d[0].x += 0.0001;
-                    points2d[0].y += 0.0001;
-                    points2d[1].x -= 0.0001;
-                    points2d[1].y -= 0.0001;
-                    points2d[2].x += 0.0001;
-                    points2d[2].y += 0.0001;
-                    points2d[3].x -= 0.0001;
-                    points2d[3].y -= 0.0001;
-                }
-                w = Math.abs(points2d[1].x - points2d[0].x);
-                h = Math.abs(points2d[2].y - points2d[1].y);
-                scaleX = w / image.getWidth();
-                scaleY = h / image.getHeight();
-                first = false;
-            } while (w < 0.0000000001 || h < 0.0000000001);
 
             AffineTransform transform = (AffineTransform) baseTransform.clone();
-            transform.concatenate(AffineTransform.getTranslateInstance(points2d[0].x, points2d[0].y));
-            double dX1 = points2d[3].x - points2d[0].x;
-            double dY1 = points2d[1].y - points2d[0].y;
+            transform.concatenate(new AffineTransform(
+                    (points2d[1].x - points2d[0].x) / image.getWidth(),
+                    (points2d[1].y - points2d[0].y) / image.getWidth(),
+                    (points2d[3].x - points2d[0].x) / image.getHeight(),
+                    (points2d[3].y - points2d[0].y) / image.getHeight(),
+                    points2d[0].x,
+                    points2d[0].y
+            ));
 
-            double dY2 = points2d[3].y - points2d[0].y;
-            double dX2 = points2d[1].x - points2d[0].x;
-
-            double dropOffX = dX1 / dY2;
-            double dropOffY = dY1 / dX2;
-
-            transform.concatenate(AffineTransform.getShearInstance(dropOffX, dropOffY));
-            if ((points2d[1].x - points2d[0].x) < 0) {
-                scaleX = -scaleX;
-            }
-            if ((points2d[3].y - points2d[0].y) < 0) {
-                scaleY = -scaleY;
-            }
-            transform.concatenate(AffineTransform.getScaleInstance(scaleX, scaleY));
-
-            return new BakeResult(image, ((DataBufferInt) image.getRaster().getDataBuffer()).getData(), transform, (x, y) -> {
-                return getDepthAt(x, y);
-            }, priority, getMaxX(), getMaxY(), getMinX(), getMinY());
+            return new BakeResult(image, ((DataBufferInt) image.getRaster().getDataBuffer()).getData(), transform, this::getDepthAt, priority, getMaxX(), getMaxY(), getMinX(), getMinY());
         }
     }
 

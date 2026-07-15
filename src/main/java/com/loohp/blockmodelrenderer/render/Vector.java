@@ -22,20 +22,11 @@ package com.loohp.blockmodelrenderer.render;
 
 public class Vector implements Cloneable {
 
-    private static final double EPSILON = 0.000001;
+    public static final double EPSILON = 0.000001;
 
-    public static double getEpsilon() {
-        return EPSILON;
-    }
     private double x;
     private double y;
     private double z;
-
-    public Vector() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-    }
 
     public Vector(double x, double y, double z) {
         this.x = x;
@@ -137,7 +128,7 @@ public class Vector implements Cloneable {
     }
 
     public boolean isNormalized() {
-        return Math.abs(this.lengthSquared() - 1) < getEpsilon();
+        return Math.abs(this.lengthSquared() - 1) < EPSILON;
     }
 
     public double lengthSquared() {

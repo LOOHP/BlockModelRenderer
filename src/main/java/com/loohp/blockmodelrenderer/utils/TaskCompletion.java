@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 
 public class TaskCompletion {
 
-    private List<Future<?>> futures;
+    private final List<Future<?>> futures;
 
     public TaskCompletion(List<Future<?>> futures) {
         this.futures = futures;

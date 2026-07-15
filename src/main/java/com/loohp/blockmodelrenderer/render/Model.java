@@ -47,8 +47,8 @@ public class Model implements ITransformable, Serializable {
 
     public static final int PIXEL_PER_THREAD = 256;
 
-    private List<Hexahedron> components;
-    private List<Face> faces;
+    private final List<Hexahedron> components;
+    private final List<Face> faces;
 
     public Model(List<Hexahedron> components) {
         this.components = components;

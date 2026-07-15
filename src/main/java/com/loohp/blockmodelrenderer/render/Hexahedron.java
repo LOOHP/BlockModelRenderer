@@ -49,14 +49,14 @@ public class Hexahedron implements ITransformable, Serializable {
                               new Face(images[5], new Point3D(p1.x, p2.y, p1.z), new Point3D(p1.x, p2.y, p2.z), new Point3D(p1.x, p1.y, p2.z), new Point3D(p1.x, p1.y, p1.z)));
     }
 
-    private Face upFace;
-    private Face downFace;
-    private Face northFace;
-    private Face eastFace;
-    private Face southFace;
-    private Face westFace;
-    private List<Face> byDirection;
-    private List<Face> byAverageZ;
+    private final Face upFace;
+    private final Face downFace;
+    private final Face northFace;
+    private final Face eastFace;
+    private final Face southFace;
+    private final Face westFace;
+    private final List<Face> byDirection;
+    private final List<Face> byAverageZ;
 
     public Hexahedron(Face upFace, Face downFace, Face northFace, Face eastFace, Face southFace, Face westFace) {
         this.upFace = upFace;
@@ -88,12 +88,12 @@ public class Hexahedron implements ITransformable, Serializable {
     public Hexahedron(InputStream inputStream) throws IOException {
         DataInputStream in = new DataInputStream(inputStream);
 
-        this.upFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
-        this.downFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
-        this.northFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
-        this.eastFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
-        this.southFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
-        this.westFace = DataSerializationUtils.readNullable(Face.class, in, i -> new Face(i));
+        this.upFace = DataSerializationUtils.readNullable(Face.class, in, Face::new);
+        this.downFace = DataSerializationUtils.readNullable(Face.class, in, Face::new);
+        this.northFace = DataSerializationUtils.readNullable(Face.class, in, Face::new);
+        this.eastFace = DataSerializationUtils.readNullable(Face.class, in, Face::new);
+        this.southFace = DataSerializationUtils.readNullable(Face.class, in, Face::new);
+        this.westFace = DataSerializationUtils.readNullable(Face.class, in, Face::new);
 
         this.upFace.oppositeFace = this.downFace;
         this.downFace.oppositeFace = this.upFace;
@@ -117,12 +117,12 @@ public class Hexahedron implements ITransformable, Serializable {
     @Override
     public void serialize(OutputStream outputStream) throws IOException {
         DataOutputStream out = new DataOutputStream(outputStream);
-        DataSerializationUtils.writeNullable(upFace, out, (f, o) -> f.serialize(o));
-        DataSerializationUtils.writeNullable(downFace, out, (f, o) -> f.serialize(o));
-        DataSerializationUtils.writeNullable(northFace, out, (f, o) -> f.serialize(o));
-        DataSerializationUtils.writeNullable(eastFace, out, (f, o) -> f.serialize(o));
-        DataSerializationUtils.writeNullable(southFace, out, (f, o) -> f.serialize(o));
-        DataSerializationUtils.writeNullable(westFace, out, (f, o) -> f.serialize(o));
+        DataSerializationUtils.writeNullable(upFace, out, Face::serialize);
+        DataSerializationUtils.writeNullable(downFace, out, Face::serialize);
+        DataSerializationUtils.writeNullable(northFace, out, Face::serialize);
+        DataSerializationUtils.writeNullable(eastFace, out, Face::serialize);
+        DataSerializationUtils.writeNullable(southFace, out, Face::serialize);
+        DataSerializationUtils.writeNullable(westFace, out, Face::serialize);
     }
 
     @Override
